@@ -15,8 +15,8 @@ class ColorSettings:
 
 class ScreenSettings:
     """Class to hold all the settings related to the screen."""
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1280
+    HEIGHT = 720
     RESOLUTION = (WIDTH, HEIGHT)
     FPS = 60
     CRT_ALPHA_RANGE = (75, 90)
