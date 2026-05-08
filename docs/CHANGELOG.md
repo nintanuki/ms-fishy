@@ -1,9 +1,7 @@
 # Change Log
 
-This file is an append-only record of every code change made to **<RENAME ME — your project name>**
+This file is an append-only record of every code change made to **Fishy**
 by a human, AI assistant, or copilot tool. Read it before making changes so you know the current state of the codebase.
-
-> **First step when you copy this template:** replace `<RENAME ME — your project name>` above with the real project name.
 
 ## Format
 
@@ -109,3 +107,75 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
 **File:** README.md, docs/ARCHITECTURE.md, docs/TESTING.md, docs/TODO.md
 **Why:** Reflected the code changes above (Esc now wired, `__init__.py` files exist) and added a "first-run setup, delete this block afterwards" section to README + a delete-this-section instruction on the first-run checklist in docs/TODO.md.
 **Editor:** Bryan (Claude Opus 4.7)
+
+## 2026-05-07 — Initial gameplay implementation
+
+**File:** core/sprites.py
+**Lines (at time of edit):** (new file)
+**After:** `Player` sprite (yellow square, arrow-key + left-stick movement, boundary clamping) and `Fish` sprite (red square, random size/speed, spawns from left or right edge, self-destructs off-screen).
+**Why:** First gameplay pass — player and enemy sprites for the eat-or-be-eaten mechanic.
+**Editor:** Bryan
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** (new file)
+**After:** `FishManager` with `spawn_fish`, `check_collisions` (eat smaller fish → grow player; eaten by larger fish → exit), and `grow_player`.
+**Why:** Centralizes all fish lifecycle logic, keeping `GameManager` thin.
+**Editor:** Bryan
+
+**File:** settings.py
+**Lines (at time of edit):** 50-55 (added)
+**After:** Added `PlayerSettings` (SPEED, SIZE) and `FishSettings` (SPAWN_RATE, MIN_SIZE, MAX_SIZE, MIN_SPEED, MAX_SPEED, PLAYER_GROWTH_RATE).
+**Why:** New gameplay systems need tunables; all magic numbers must live in settings.py.
+**Editor:** Bryan
+
+**File:** main.py
+**Lines (at time of edit):** 1-170 (modified)
+**After:** `GameManager.__init__` now creates `Player`, `all_sprites`, `enemy_sprites`, and `FishManager`. `_update_world` drives all three. `_render_frame` draws both sprite groups.
+**Why:** Wire the new sprites and manager into the frame loop.
+**Editor:** Bryan
+
+## 2026-05-08 — Docs rewritten for Fishy
+
+**File:** README.md
+**Lines (at time of edit):** 1-60 (replaced)
+**Before:** Template scaffold description with first-run setup instructions.
+**After:** Describes Fishy — the eat-or-be-eaten game, its current status, controls, and links.
+**Why:** Docs reflected the template origin, not the actual game.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 1-100 (replaced)
+**Before:** Generic scaffold architecture with stub update/render descriptions.
+**After:** Documents Player, Fish, FishManager, collision logic, and all current settings classes.
+**Why:** Architecture had not been updated after gameplay was added.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** 1-60 (replaced)
+**Before:** Template first-run checklist.
+**After:** Real roadmap with completed items, core polish tasks, difficulty/feel, visuals, audio, and known code-health items.
+**Why:** TODO reflected the template, not the game's actual state and goals.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+**File:** docs/CHANGELOG.md
+**Lines (at time of edit):** 3 (modified)
+**Before:** `<RENAME ME — your project name>`
+**After:** `Fishy`
+**Why:** Project name was never filled in.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** 1-30 (replaced)
+**Before:** Template smoke checks (background color, title bar, CRT).
+**After:** Added gameplay checks: player moves, fish spawn and scroll, player grows on eat, session ends on being eaten.
+**Why:** No gameplay tests existed after the initial gameplay pass was added.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+## 2026-05-08T17:35:08.8120954-04:00 — Stop restarting music every frame
+
+**File:** main.py
+**Lines (at time of edit):** 149 (removed)
+**Before:** `self.audio.play_random_bgm() # move to functions later` was called every loop iteration in `GameManager.run()`.
+**After:** Removed the per-frame call so background music is started by `AudioManager` initialization instead of being continuously reloaded.
+**Why:** Reloading and replaying music each frame effectively prevented audible playback even after the path issue was fixed.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)

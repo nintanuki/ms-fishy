@@ -80,9 +80,25 @@ class AssetPaths:
     """Class to hold all the file paths for assets."""
     # __file__-relative so the project runs no matter the working directory
     # (e.g. when launched from the arcade cabinet launcher).
+    BASE_DIR = os.path.dirname(__file__)
+    ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
+    AUDIO_DIR = os.path.join(ASSETS_DIR, 'audio')
+    MUSIC_DIR = os.path.join(AUDIO_DIR, 'music')
+
     TV = os.path.join(
-        os.path.dirname(__file__), 'assets', 'graphics', 'effects', 'tv.png'
+        ASSETS_DIR, 'graphics', 'effects', 'tv.png'
     )
+
+    # # Music
+    # BACKGROUND_MUSIC = os.path.join(
+    #     MUSIC_DIR, 'aquarium.mp3'
+    # )
+
+    # Music
+    NORMAL_MUSIC_TRACKS = [
+        os.path.join(MUSIC_DIR, 'aquarium.mp3'),
+    ]
+    MUSIC_TRACKS = NORMAL_MUSIC_TRACKS
 
 class DebugSettings:
     """Settings related to debugging features."""

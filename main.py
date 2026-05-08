@@ -5,6 +5,7 @@ import sys
 
 from core.sprites import Player
 from systems.fish_manager import FishManager
+from systems.audio_manager import AudioManager
 from crt import CRT
 from settings import ScreenSettings, InputSettings, ColorSettings
 
@@ -32,6 +33,8 @@ class GameManager:
 
         self.enemy_sprites = pygame.sprite.Group()
         self.fish_manager = FishManager(self.enemy_sprites)
+
+        self.audio = AudioManager()
 
         # Post-processing: tracked separately because the CRT pass is skipped
         # when the player is already on a real CRT (i.e. fullscreen on the cabinet).
