@@ -96,7 +96,7 @@ class AssetPaths:
 
     # Music
     NORMAL_MUSIC_TRACKS = [
-        os.path.join(MUSIC_DIR, 'aquarium.mp3'),
+        os.path.join(MUSIC_DIR, '8bit-aquarium.mp3'),
     ]
     MUSIC_TRACKS = NORMAL_MUSIC_TRACKS
 
