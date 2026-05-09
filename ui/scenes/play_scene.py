@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from core.scene import Scene
+from core.score import Score
 from core.sprites import Player
 from systems.fish_manager import FishManager
 from settings import (
@@ -26,7 +27,7 @@ class PlayScene(Scene):
     PAUSED = "paused"
 
     def __init__(self, game, play_intro_splash: bool = False):
-        """Initialize the play scene with a fresh player and fish manager.
+        """Initialize the play scene with a fresh player, score, and fish manager.
         
         Args:
             game: The GameManager instance that owns this scene.
@@ -43,8 +44,9 @@ class PlayScene(Scene):
         self._drop_in_splash_played = False
 
     def _create_gameplay_entities(self) -> None:
-        """Build player, enemy container, and fish manager for one session."""
+        """Build player, score, enemy container, and fish manager for one session."""
         self.player = Player(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2)
+        self.score = Score()
         self.all_sprites = pygame.sprite.Group()
         self.all_sprites.add(self.player)
         self.enemy_sprites = pygame.sprite.Group()
@@ -163,15 +165,18 @@ class PlayScene(Scene):
 
         self.all_sprites.update(joysticks=self.game.connected_joysticks)
         self.enemy_sprites.update()
-        game_over, ate_count = self.fish_manager.update(self.player)
-        if ate_count > 0:
+        game_over, eaten_sizes = self.fish_manager.update(self.player)
+        for fish_size in eaten_sizes:
+            self.score.add(fish_size)
+
+        if eaten_sizes:
             self.game.audio.play("gulp")
         if game_over:
             # Transition to game-over scene
             self.game.audio.stop_music()
             self.game.audio.play("scream")
             from ui.scenes.game_over_scene import GameOverScene
-            self.game.scenes.change_to(GameOverScene(self.game))
+            self.game.scenes.change_to(GameOverScene(self.game, self.score))
 
     def render(self, screen: pygame.Surface) -> None:
         """Draw the play scene to the screen.

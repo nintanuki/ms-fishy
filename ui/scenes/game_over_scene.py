@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 from core.scene import Scene
+from core.score import Score
 from settings import ColorSettings, InputSettings, ScreenSettings, UiSettings
 from utils.text import draw_centered_text
 
@@ -12,13 +13,15 @@ from utils.text import draw_centered_text
 class GameOverScene(Scene):
     """Scene displayed when the player is eaten by a larger fish."""
 
-    def __init__(self, game):
+    def __init__(self, game, score: Score | None = None):
         """Initialize the game-over scene.
         
         Args:
             game: The GameManager instance that owns this scene.
+            score: Score from the run that just ended.
         """
         super().__init__(game)
+        self.score = score
 
     def on_enter(self) -> None:
         """Called when entering this scene from another scene."""

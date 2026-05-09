@@ -64,7 +64,7 @@ Launch scene shown on boot.
 
 #### `PlayScene` (`ui/scenes/play_scene.py`)
 
-Handles active gameplay and pausing. Owns the player, all sprites, enemy sprites, and fish manager.
+Handles active gameplay and pausing. Owns the player, run `Score`, all sprites, enemy sprites, and fish manager.
 
 - **On Enter:** Set local substate to `DROPPING_IN`, place the player above the screen, and seed downward velocity from `PlayerSettings.DROP_IN_VELOCITY`. Music is intentionally deferred until drop-in completes.
 - **Handle Events:** Enter/START toggles pause only when active (pause/resume SFX, music pause/resume); global input is not forwarded here.
@@ -72,7 +72,7 @@ Handles active gameplay and pausing. Owns the player, all sprites, enemy sprites
   - `DROPPING_IN`: advances one-time auto-pilot motion using the same acceleration/counter-acceleration/drag model as player movement, without reading input and without spawning fish.
   - During drop-in: if title-started, play one-shot `splash` SFX exactly when the player first crosses into the visible screen from the top.
   - On drop-in settle: start/resume gameplay music and switch to `ACTIVE`.
-  - `ACTIVE`: advances sprites and fish manager; checks for game-over and transitions to GameOverScene if needed.
+  - `ACTIVE`: advances sprites and fish manager; records fish sizes from collision results into `Score`; checks for game-over and transitions to `GameOverScene(score=...)` if needed.
   - `PAUSED`: no world updates.
 - **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. `PAUSED` draws black background + centered pause text.
 
@@ -81,7 +81,16 @@ Handles active gameplay and pausing. Owns the player, all sprites, enemy sprites
 Displays the game-over screen.
 
 - **Render:** Black background + centered game-over text.
+- **Data:** Receives the ended run `Score` object from `PlayScene`.
 - **Handle Events:** Enter/START transitions to a fresh PlayScene.
+
+### `Score` (`core/score.py`)
+
+Run-scoped model for points.
+
+- Tracks `fish_eaten` (count) and `size_eaten` (cumulative fish width in px).
+- `add(fish_size)` increments both counters.
+- `total` property returns `size_eaten`, which is the leaderboard-persisted value in Pass 2.
 
 
 
@@ -107,9 +116,9 @@ A `pygame.sprite.Sprite` representing an enemy fish.
 `FishManager` holds the `enemy_sprites` group and drives the fish lifecycle each frame:
 
 1. **Spawn timer:** increments each frame; fires `spawn_fish()` every `FishSettings.SPAWN_RATE` frames (≈1 s at 60 FPS) and resets.
-2. **Collision:** if `player is None`, collision is skipped and update returns `(False, 0)`.
+2. **Collision:** if `player is None`, collision is skipped and update returns `(False, [])`.
 3. **Player collision path:** with a player, `check_collisions` calls `pygame.sprite.spritecollide` against the player.
-  - Player size > fish size → `grow_player`, fish is killed.
+  - Player size > fish size → `grow_player`, fish is killed, fish size is appended to the `eaten_fish_sizes` result.
   - Player size ≤ fish size → returns `True` to signal game-over.
 
 When game-over is detected, the scene transitions automatically to `GameOverScene`.
@@ -168,6 +177,7 @@ assets/
   graphics/effects/tv.png       CRT overlay texture.
 core/
   scene.py                      Base Scene class for game states.
+  score.py                      Run-scoped score model (fish count + size total).
   sprites.py                    Player and Fish sprite classes.
 systems/
   scene_manager.py              Scene manager for state transitions.

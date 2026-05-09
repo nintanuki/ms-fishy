@@ -442,8 +442,6 @@ doing the actual implementation.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
 
----
-
 ## 2026-05-09T19:55:00-04:00 — title-only UI + gameplay-only background music
 
 **File:** ui/scenes/title_scene.py
@@ -1388,5 +1386,85 @@ doing the actual implementation.
 **After:**
     Splash assertion now verifies trigger at first top-edge appearance before gameplay music.
 **Why:** Smoke test now checks the corrected timing requirement.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+## 2026-05-09T20:20:00-04:00 — pass 1.6 marked complete (docs sync)
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 1, item 1.6 checklist line
+**Before:** `- [ ] Create [ui/scenes/game_over_scene.py](../ui/scenes/game_over_scene.py).`
+**After:** `- [x] Create [ui/scenes/game_over_scene.py](../ui/scenes/game_over_scene.py).`
+**Why:** `GameOverScene` already exists and is wired as a real `Scene` subclass with centered `GAME OVER` rendering and Enter/START restart behavior. This update resolves a stale roadmap checkbox without changing runtime code.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T20:35:00-04:00 — pass 2.1 score model + scene wiring
+
+**File:** core/score.py
+**Lines (at time of edit):** (new file)
+**After:**
+    Added `Score` class with `fish_eaten`, `size_eaten`, `add(fish_size)`, and `total` property.
+**Why:** Implements TODO Pass 2.1 run-scoped score model owned by `PlayScene`.
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** `update`, `check_collisions` return contract and collision loop
+**Before:**
+    `update` / `check_collisions` returned `(game_over, ate_count)` as an integer fish count.
+**After:**
+    `update` / `check_collisions` now return `(game_over, eaten_fish_sizes)` where the second value is a list of eaten fish sizes.
+    Title/background mode (`player=None`) now returns `(False, [])`.
+**Why:** `PlayScene` needs per-fish size values to call `score.add(fish.size)` exactly as specified by Pass 2.1.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** imports, `_create_gameplay_entities`, `update`, game-over transition
+**Before:**
+    Scene owned player + fish systems only; consumed only `ate_count`; transitioned with `GameOverScene(self.game)`.
+**After:**
+    Scene now owns `self.score = Score()`.
+    `update()` loops through `eaten_sizes` from `FishManager.update(...)` and calls `self.score.add(fish_size)` for each eat.
+    Game-over transition now passes run score via `GameOverScene(self.game, self.score)`.
+**Why:** Wires scoring into active gameplay and forwards run data to the next scene.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** constructor signature and fields
+**Before:**
+    Constructor accepted only `game`.
+**After:**
+    Constructor accepts optional `score: Score | None` and stores it on `self.score`.
+**Why:** Prepares scene flow for upcoming leaderboard/initials tasks that need ended-run score data.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** Scene descriptions, FishManager section, source tree
+**Before:**
+    `PlayScene` ownership/update text did not mention score.
+    `FishManager` documented `(False, 0)` in no-player mode.
+    Core tree had no `score.py`.
+**After:**
+    Added score ownership + update flow notes for `PlayScene`, score payload note for `GameOverScene`, a dedicated `Score` subsection, updated FishManager return semantics to `(False, [])`, and added `core/score.py` to source tree.
+**Why:** Keeps architecture docs consistent with the new score pipeline.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 2 item 2.1 checkbox line
+**Before:** `- [ ] Create [core/score.py](../core/score.py) with one class:`
+**After:** `- [x] Create [core/score.py](../core/score.py) with one class:`
+**Why:** Marks Pass 2.1 complete after implementation.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T20:50:00-04:00 — fix crash after splash intro (FishManager return path)
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** `check_collisions` return at end of loop
+**Before:**
+    `return False, eaten_sizes` was indented inside the `for fish in collided_fish` loop.
+    When there were zero collisions, the function fell through and returned `None`.
+**After:**
+    `return False, eaten_sizes` is now outside the loop so no-collision frames return a tuple.
+**Why:** Fixes `TypeError: cannot unpack non-iterable NoneType object` in `PlayScene.update()` immediately after gameplay begins.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)

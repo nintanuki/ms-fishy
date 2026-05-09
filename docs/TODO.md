@@ -138,7 +138,7 @@ Replace the string-based `game_state` with first-class `Scene` objects.
 
 ### 1.6 `GameOverScene` (real scene, no UI changes yet — leaderboard comes in Pass 2)
 
-- [ ] Create [ui/scenes/game_over_scene.py](../ui/scenes/game_over_scene.py).
+- [x] Create [ui/scenes/game_over_scene.py](../ui/scenes/game_over_scene.py).
 - Renders exactly what the current `game_over` state renders today: black background, centered "GAME OVER". No restart prompt yet (the leaderboard scene in Pass 2 replaces this).
 - `Enter` or `START` transitions to a fresh `PlayScene`.
 - Acceptance: behaviour is identical to today; the only structural change is that this is a real `Scene` subclass.
@@ -152,7 +152,7 @@ to show, and gives players a reason to keep playing.
 
 ### 2.1 Score model
 
-- [ ] Create [core/score.py](../core/score.py) with one class:
+- [x] Create [core/score.py](../core/score.py) with one class:
 
   ```python
   class Score:
