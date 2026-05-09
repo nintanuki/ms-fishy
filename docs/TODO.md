@@ -28,10 +28,11 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 
 ## Core gameplay polish
 
-- [ ] Game-over screen instead of abrupt `sys.exit()` when eaten — show a "YOU WERE EATEN" message and a restart prompt.
+- [ ] **Pixel-perfect (mask) collision** — swap `spritecollide` for `collide_mask` now that fish are polygon shapes; bounding-box overlap fires in empty transparent corners.
+- [ ] Game-over screen instead of abrupt `sys.exit()` when eaten — black screen, large centered `Pixeled.ttf` white text ("GAME OVER" / restart prompt). No abrupt exit.
 - [ ] Title / start screen before gameplay begins.
 - [ ] Scene/state machine: `title → playing → game_over → (restart or quit)`.
-- [ ] Pause overlay (`P` key / `START` button) that freezes the world and darkens the screen.
+- [ ] Pause feature — `Enter` key freezes world, stops music, shows centered pause text on black; resume restores music. Play `sfx_sounds_pause2_in.ogg` on pause and `sfx_sounds_pause2_out.ogg` on unpause.
 - [ ] Score counter: track fish eaten or total pixels consumed; display in the HUD.
 - [ ] High-score persistence: save the session's top score to a JSON file next to `main.py`.
 
@@ -48,8 +49,12 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 
 ## Visuals
 
-- [ ] Replace the yellow-square player placeholder with a real sprite or animated surface.
-- [ ] Replace the red-square fish placeholder with fish sprites (multiple frames for swim cycle).
+- [ ] **Player fish shape** — give the player the same diamond-body + triangle-tail polygon treatment as enemy fish; remove the yellow square placeholder.
+- [ ] **Enemy fish color variety** — randomize or tier fish colors so threat level is readable at a glance.
+- [ ] **Fish eyes** — small black square centered vertically, positioned one-quarter of the way from the nose toward the start of the tail.
+- [ ] **Fish outlines / shadow** — add a black outline or drop-shadow to all fish (player and enemy) for legibility against the background.
+- [ ] **Player distinction** — give the player a unique color, gradient, or other visual marker so it stands out from enemy fish.
+- [ ] Replace fish polygon shapes with imported sprites once art is ready (multiple frames for swim cycle).
 - [ ] Scrolling ocean background or parallax layers.
 - [ ] Particle effect when the player eats a fish (splash, bubbles).
 

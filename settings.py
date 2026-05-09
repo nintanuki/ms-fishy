@@ -50,17 +50,29 @@ class InputSettings:
 class PlayerSettings:
     """Player-specific settings like movement speed."""
     SPEED = 5
-    SIZE = (50, 50)
+    SIZE = (16, 16)
+    # % of the eaten fish's size is added to the player
+    PLAYER_GROWTH_COEFFICIENT = 0.10
 
 # Add this to settings.py
 
 class FishSettings:
-    SPAWN_RATE = 60  # Frames between spawns (approx 1 sec at 60 FPS)
-    MIN_SIZE = 10
-    MAX_SIZE = 100
-    MIN_SPEED = 2
-    MAX_SPEED = 5
-    PLAYER_GROWTH_RATE = 2 # Pixels added to width/height per "eat"
+    """Settings related to the fish enemies."""
+
+    # NOTE: MAX_SIZE must be less than ScreenSettings.HEIGHT (720).
+    # If MAX_SIZE >= 720, the spawn logic in sprites.py will pass a 
+    # negative range to random.randint(), causing a ValueError.
+
+    SPAWN_RATE = ScreenSettings.FPS // 5 # Frames between spawns
+    MIN_SIZE = 8
+    MAX_SIZE = ScreenSettings.HEIGHT // 3
+    MIN_SPEED = 0.5
+    MAX_SPEED = 3
+
+    # Fish body height as a fraction of size; values < 1 flatten the fish vertically.
+    BODY_HEIGHT_RATIO = 0.5
+    # Fish tail width as a fraction of size.
+    TAIL_WIDTH_RATIO = 0.33
 
 class FontSettings:
     """Font files, sizes, and text-color mappings for UI rendering."""

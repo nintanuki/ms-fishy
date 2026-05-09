@@ -171,6 +171,53 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
 **Why:** No gameplay tests existed after the initial gameplay pass was added.
 **Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
 
+## 2026-05-08 — Pixel-perfect mask collision
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 12 (Player.__init__), 82 (Fish.__init__) (modified)
+**Before:** Neither sprite built a mask; collision relied on bounding-box rect overlap.
+**After:** Both `Player.__init__` and `Fish.__init__` call `pygame.mask.from_surface(self.image)` after the surface is ready, storing it as `self.mask`.
+**Why:** Fish are now polygon shapes on transparent surfaces; the bounding box contains large empty corners that triggered false collisions.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** 45, 64 (modified)
+**Before:** `spritecollide(player, self.sprite_group, False)` used default rect collision. `grow_player` did not rebuild the mask after resizing.
+**After:** `spritecollide(..., pygame.sprite.collide_mask)` for pixel-accurate hits. `grow_player` calls `pygame.mask.from_surface(player.image)` after resizing so the mask stays in sync.
+**Why:** Required to make the new mask-based collision actually work end-to-end.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+## 2026-05-08 — Fix fish tail direction; rename cryptic variables; improve comments
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 54-91 (modified Fish.__init__)
+**Before:** `tail = [(0, cy), (tail_w, 0), (tail_w, body_h)]` — triangle point was on the left, so the tail looked like a backwards arrowhead for a right-facing fish. Single-letter/abbreviated locals (`body_h`, `tail_w`, `total_w`, `cy`). Minimal comments.
+**After:** `tail_points = [(0, 0), (0, body_height), (tail_width, center_y)]` — wide fan on the left, tip pointing right into the diamond. All locals renamed to full words (`body_height`, `tail_width`, `total_width`, `center_y`). Block comment explains the layout and what each point represents.
+**Why:** Tail geometry was mirrored; variable names violated the project's readability rules; comments were not sufficient for a non-coder to follow the math.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+## 2026-05-08 — Draw fish as polygon shape (diamond body + triangle tail)
+
+**File:** settings.py
+**Lines (at time of edit):** 65-66 (added to FishSettings)
+**After:** Added `BODY_HEIGHT_RATIO = 0.5` and `TAIL_WIDTH_RATIO = 0.33`.
+**Why:** Fish shape proportions belong in settings.py as named constants, not as inline magic numbers.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 41-66 (replaced Fish.__init__)
+**Before:** `pygame.Surface((size, size))` filled solid red.
+**After:** Transparent surface drawn with two `pygame.draw.polygon` calls — a flat left-pointing triangle (tail) and a flat diamond (body). `pygame.transform.flip` mirrors the surface for left-facing fish. `self.size` stored for accurate area comparisons.
+**Why:** Visual representation of fish as a recognizable shape instead of a square.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** 47, 62 (modified)
+**Before:** `fish_area = fish.rect.width * fish.rect.height`; `growth_amount = fish.rect.width * ...`
+**After:** `fish_area = fish.size * fish.size`; `growth_amount = fish.size * ...`
+**Why:** The polygon bounding box no longer equals the conceptual fish size, so the stored `fish.size` attribute is used instead for consistent area comparisons and growth calculation.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
 ## 2026-05-08T17:35:08.8120954-04:00 — Stop restarting music every frame
 
 **File:** main.py
