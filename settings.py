@@ -29,6 +29,8 @@ class ColorSettings:
 
     BG_COLOR = DARK_TURQUOISE
 
+    GRAY = (140, 140, 140)  # Muted gray used for inactive UI elements.
+
 class ScreenSettings:
     """Class to hold all the settings related to the screen."""
     WIDTH = 1280
@@ -47,14 +49,24 @@ class UiSettings:
     PAUSE_TEXT = "PAUSED"
     TITLE_TEXT = "MS. FISHY"
     START_PROMPT_TEXT = "PRESS START TO PLAY"
-    HIGH_SCORE_LABEL = "HI: "
     TITLE_FONT_SIZE = 96      # Title font size in points for the title scene.
     START_PROMPT_FONT_SIZE = 18  # Prompt font size in points for title scene CTA.
     TITLE_CENTER_Y_RATIO = 0.50  # Vertical title anchor as fraction of screen height.
     START_PROMPT_CENTER_Y_RATIO = 0.68  # Vertical prompt anchor as fraction of screen height.
     OVERLAY_FONT_SIZE = 52    # Primary overlay font size in points.
     HUD_FONT_SIZE = 24        # HUD font size in points for fish count and score labels.
+    HUD_FONT_SIZE_SMALL = 16  # Compact HUD font size in points for in-game display.
     HUD_PADDING = 16          # Pixel inset from screen edges for HUD labels.
+
+    # Initials entry scene layout.
+    # Three-line block (title row, prompt row, initials row) is vertically centered,
+    # with identical spacing between row 1->2 and row 2->3.
+    INITIALS_BLOCK_CENTER_Y_RATIO = 0.52  # Vertical center of the 3-row initials block.
+    INITIALS_BLOCK_ROW_GAP = 96           # Equal vertical spacing in pixels between rows.
+    INITIALS_SLOT_GAP = 20          # Horizontal gap between adjacent slots, in pixels.
+    INITIALS_TITLE_SCORE_GAP = 28   # Horizontal pixel gap between title label and score value.
+
+    LEADERBOARD_ENTRIES_START_Y = 150  # First leaderboard row Y anchor.
 
 
 class GameStateSettings:

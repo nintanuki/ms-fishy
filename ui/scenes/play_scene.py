@@ -42,14 +42,12 @@ class PlayScene(Scene):
             ColorSettings.BG_COLOR_TOP, ColorSettings.BG_COLOR_BOTTOM,
         )
         self.hud_font = pygame.font.Font(FontSettings.FONT, UiSettings.HUD_FONT_SIZE)
-        self.hud = Hud(
-            score=self.score,
-            font=self.hud_font,
-            leaderboard=getattr(self.game, "leaderboard", None),
-        )
+        self.hud_font = pygame.font.Font(FontSettings.FONT, UiSettings.HUD_FONT_SIZE_SMALL)
+        self.hud = Hud(score=self.score, font=self.hud_font)
         self._state = self.DROPPING_IN
         self._play_intro_splash = play_intro_splash
         self._drop_in_splash_played = False
+        self._elapsed_frames = 0
 
     def _create_gameplay_entities(self) -> None:
         """Build player, score, enemy container, and fish manager for one session."""
@@ -171,6 +169,7 @@ class PlayScene(Scene):
         if self._state == self.PAUSED:
             return
 
+        self._elapsed_frames += 1
         self.all_sprites.update(joysticks=self.game.connected_joysticks)
         self.enemy_sprites.update()
         game_over, eaten_sizes = self.fish_manager.update(self.player)
@@ -197,7 +196,7 @@ class PlayScene(Scene):
             self.all_sprites.draw(screen)
             self.enemy_sprites.draw(screen)
             if self._state == self.ACTIVE:
-                self.hud.draw(screen)
+                self.hud.draw(screen, self._elapsed_frames // ScreenSettings.FPS)
         elif self._state == self.PAUSED:
             screen.fill(ColorSettings.BLACK)
             draw_centered_text(

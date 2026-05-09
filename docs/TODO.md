@@ -39,6 +39,15 @@ Within a pass, items are ordered low-to-high difficulty.
 - [x] **Architecture rule**: prefer updating an existing function over creating a near-duplicate name.
 - [x] **Architecture rule**: never add/remove/modify in-game UI without explicit user request.
 - [x] **Code-health items inherited from the template** — explicit imports in `crt.py`, deduped mute flags, `__file__`-relative asset paths, removed unused `game_active`, all `__init__.py` files present, `Esc` wired, title set, no `sys.exit()` in `FishManager`, joystick list cached.
+- [x] **Pass 1.1** — Pygame-primitive visuals rule added to `ARCHITECTURE.md` and `copilot-instructions.md`.
+- [x] **Pass 1.2** — `utils/text.py` `draw_centered_text` helper; refactored overlay rendering in `main.py`.
+- [x] **Pass 1.3** — `Scene` base class (`core/scene.py`), `SceneManager` (`systems/scene_manager.py`), `ui/scenes/` package; `main.py` refactored to scene graph; `ARCHITECTURE.md` updated.
+- [x] **Pass 1.4** — `TitleScene` with ocean gradient background, background fish via `FishManager(player=None)`, title + prompt text, Enter/START starts game; `utils/graphics.py` `build_gradient_surface` helper extracted.
+- [x] **Pass 1.5** — `PlayScene` with `DROPPING_IN` / `ACTIVE` / `PAUSED` substates, player drop-in animation, `PlayerSettings.DROP_IN_VELOCITY`, HUD wired.
+- [x] **Pass 1.6** — `GameOverScene` as a proper `Scene` subclass.
+- [x] **Pass 2.1** — `Score` model in `core/score.py`; `PlayScene` tracks `fish_eaten` and `size_eaten`, passes score to `GameOverScene`.
+- [x] **Pass 2.2** — `Hud` widget in `ui/hud.py`; top-left fish count, top-right score, top-center hi-score line; `UiSettings.HUD_FONT_SIZE` and `HUD_PADDING` constants.
+- [x] **Pass 2.3** — `Leaderboard` in `systems/leaderboard.py`; top-10 JSON persistence with atomic save, initials dedup rule, `qualifies`/`submit`/`top` API; `AssetPaths.LEADERBOARD` constant.
 
 ---
 
@@ -48,183 +57,11 @@ Within a pass, items are ordered low-to-high difficulty.
 
 ---
 
-## Pass 1 — Foundation (do first, unblocks everything else)
-
-These are architectural decisions every later feature depends on. Doing
-them now is cheaper than retrofitting after the title screen, score, and
-HUD already exist.
-
-The implementation notes in each item are written for an implementer LLM:
-follow them literally; do not invent extra behaviour.
-
-### 1.1 Project rule: visuals are 100% Pygame primitives
-
-- [x] Add this rule to [docs/ARCHITECTURE.md](ARCHITECTURE.md) (in §7 Settings or a new §12 Project rules) and to [.github/copilot-instructions.md](../.github/copilot-instructions.md) (under "Code style"):
-
-  > **No imported visual assets.** All sprites, backgrounds, particles, and
-  > visual effects must be drawn at runtime with `pygame.draw`,
-  > `pygame.Surface` operations, or per-pixel manipulation. Audio files
-  > and font files are allowed. The CRT overlay PNG
-  > (`assets/graphics/effects/tv.png`) is grandfathered as the only
-  > exception; do not add new image files.
-
-- Acceptance: rule is in both files; no other code change required.
-
-### 1.2 `utils/text.py` — centered-text helper
-
-- [x] Create [utils/text.py](../utils/text.py) with one function:
-
-  ```python
-  def draw_centered_text(
-      surface: pygame.Surface,
-      text: str,
-      font: pygame.font.Font,
-      color: tuple[int, int, int],
-      center: tuple[int, int],
-  ) -> pygame.Rect:
-      """Render `text` with `font` and blit it centered at `center`.
-      Returns the blitted rect (useful for stacking lines)."""
-  ```
-
-- Refactor `GameManager._draw_centered_overlay` in [main.py](../main.py) to call this helper instead of duplicating the render/get_rect/blit dance.
-- Acceptance: pause and game-over screens look identical to before; `utils/text.py` is importable and has the docstring.
-
-### 1.3 `Scene` base class + `SceneManager`
-
-Replace the string-based `game_state` with first-class `Scene` objects.
-
-- [x] Create [core/scene.py](../core/scene.py) with base `Scene` class and lifecycle hooks.
-- [x] Create [systems/scene_manager.py](../systems/scene_manager.py) with `SceneManager` for transitions.
-- [x] Create [ui/scenes/](../ui/scenes/) package with `__init__.py`.
-- [x] Create [ui/scenes/play_scene.py](../ui/scenes/play_scene.py) wrapping current gameplay.
-- [x] Create [ui/scenes/game_over_scene.py](../ui/scenes/game_over_scene.py) wrapping current game-over state.
-- [x] Refactor [main.py](../main.py) to use `SceneManager`; remove gameplay attributes from `GameManager`.
-- [x] Update [docs/ARCHITECTURE.md](ARCHITECTURE.md) to show new scene-based architecture.
-- [x] Add changelog entry.
-
-- Acceptance: pressing Enter still pauses/unpauses (now via `PlayScene.handle_event`), still restarts on game-over, fullscreen + quit-combo + Esc still work, and the architecture diagram in [docs/ARCHITECTURE.md](ARCHITECTURE.md) is updated to show the SceneManager in the middle.
-
-### 1.4 `TitleScene`
-
-- [x] Create [ui/scenes/title_scene.py](../ui/scenes/title_scene.py) (create the `ui/scenes/` package as needed with an `__init__.py`).
-- Visuals:
-  - Same ocean gradient background as the play scene. Reuse the `build_gradient_surface` helper — move it to `utils/graphics.py` if needed by both scenes.
-  - Title text **"MS. FISHY"** centered horizontally, vertically positioned at 35% screen height, rendered with `Pixeled.ttf` at a large size (add `UiSettings.TITLE_FONT_SIZE = 96` to [settings.py](../settings.py)).
-  - Prompt text **"PRESS START TO PLAY"** centered horizontally, vertically positioned at 60% screen height, at `UiSettings.OVERLAY_FONT_SIZE`.
-  - **Background fish swim across the screen** while the title is showing. Reuse `FishManager` exactly — instantiate it inside `TitleScene` and call its `update(player=None)`. To make `FishManager.update` accept `None`, change its signature so when `player is None` it skips the collision step and only spawns/moves fish. Returns `(False, 0)` in that case.
-- Input:
-  - `Enter` (keyboard) or `START` (controller) transitions to `PlayScene`. **Important:** the title scene's fish must **not** be passed to the play scene — the play scene creates its own fresh `FishManager`.
-- Add the title text and prompt to [settings.py](../settings.py) `UiSettings`:
-  - `TITLE_TEXT = "MS. FISHY"`
-  - `START_PROMPT_TEXT = "PRESS START TO PLAY"`
-- Acceptance: launching the game shows the title screen; fish drift across; Enter/START starts a new run with no fish on-screen.
-
-### 1.5 `PlayScene` + player drop-in animation
-
-- [x] Create [ui/scenes/play_scene.py](../ui/scenes/play_scene.py).
-- Owns: `player`, `all_sprites`, `enemy_sprites`, `fish_manager`, `bg_surface`, and a small substate enum `DROPPING_IN` / `ACTIVE` / `PAUSED`.
-- **Drop-in animation** (substate `DROPPING_IN`, runs once on `on_enter`):
-  - Spawn the player above the screen at `(WIDTH // 2, -player.rect.height)`.
-  - Each frame, move the player downward toward the screen center using the same velocity model already in `Player` — but apply a one-time downward velocity at `on_enter` (e.g. `player.velocity_y = PlayerSettings.DROP_IN_VELOCITY`, new constant, `2.0` px/frame). Let `DRAG` and `STOP_THRESHOLD` bring it to rest naturally near the center.
-  - During this substate: ignore movement input (skip `Player.input`); still draw the player and the gradient background; do **not** call `FishManager.update` (no fish spawn yet).
-  - Transition to `ACTIVE` when `abs(player.velocity_y) < PlayerSettings.STOP_THRESHOLD` **and** `player.rect.centery >= HEIGHT // 2 - 4` (small tolerance for rounding).
-- **`ACTIVE`**: behaves exactly like the current play loop — input on, fish spawn on, collisions on. On a "fish ate player" event, transition to `GameOverScene`.
-- **`PAUSED`**: same as today (Enter/START toggles, audio pause/resume, centered "PAUSED" text on black; no fish update).
-- Add to [settings.py](../settings.py) `PlayerSettings`:
-  - `DROP_IN_VELOCITY = 2.0  # px/frame; initial downward velocity for the title→play transition`
-- Acceptance: pressing START on the title screen shows an empty ocean; the player visibly drifts in from the top and settles at the center; only after it settles do fish begin to spawn.
-
-### 1.6 `GameOverScene` (real scene, no UI changes yet — leaderboard comes in Pass 2)
-
-- [x] Create [ui/scenes/game_over_scene.py](../ui/scenes/game_over_scene.py).
-- Renders exactly what the current `game_over` state renders today: black background, centered "GAME OVER". No restart prompt yet (the leaderboard scene in Pass 2 replaces this).
-- `Enter` or `START` transitions to a fresh `PlayScene`.
-- Acceptance: behaviour is identical to today; the only structural change is that this is a real `Scene` subclass.
-
----
-
-## Pass 2 — Score, leaderboard, persistence
-
-Small but unblocks the title screen actually having something interesting
-to show, and gives players a reason to keep playing.
-
-### 2.1 Score model
-
-- [x] Create [core/score.py](../core/score.py) with one class:
-
-  ```python
-  class Score:
-      """Tracks a single run's score. Owned by PlayScene."""
-      def __init__(self):
-          self.fish_eaten = 0
-          self.size_eaten = 0  # cumulative integer pixels
-      def add(self, fish_size: int) -> None:
-          self.fish_eaten += 1
-          self.size_eaten += fish_size
-      @property
-      def total(self) -> int:
-          """The number persisted on the leaderboard. Equals size_eaten."""
-          return self.size_eaten
-  ```
-
-- `PlayScene` holds a `Score` instance and calls `score.add(fish.size)` whenever `FishManager.update` reports an eat. Pass that score into `GameOverScene` when transitioning.
-
-### 2.2 HUD widget
-
-- [x] Create [ui/hud.py](../ui/hud.py) with one class `Hud` that takes a `Score` and a font, and exposes a `draw(screen)` method.
-- Layout:
-  - Top-left: **"FISH: NN"** (zero-padded to 2 digits if you like; otherwise just integer).
-  - Top-right: **"SCORE: NNNNN"** (zero-padded to 5 digits).
-  - Top-center: **"HI: NNNNN  XYZ"** (current top leaderboard entry, or `"HI: -----"` when empty).
-  - All HUD text uses `UiSettings.HUD_FONT_SIZE = 24` (new constant). Padded 16 px from the screen edges (new `UiSettings.HUD_PADDING = 16`).
-- `PlayScene.render` calls `self.hud.draw(screen)` after the world sprites and before the game returns control (CRT pass still happens last in `GameManager`).
-- Acceptance: HUD is visible during play, hidden on title and pause screens (game-over screen has its own layout).
-
-### 2.3 Leaderboard model + persistence
-
-- [x] Create [systems/leaderboard.py](../systems/leaderboard.py):
-
-  ```python
-  class Leaderboard:
-      """Top-10 scoreboard with initials. Persists to JSON next to main.py."""
-      MAX_ENTRIES = 10
-      FILE_NAME = "leaderboard.json"   # add to AssetPaths instead if cleaner
-
-      def __init__(self): ...
-      def load(self) -> None: ...      # reads JSON; missing file = empty list
-      def save(self) -> None: ...      # writes JSON atomically
-      def qualifies(self, score: int) -> bool: ...
-      def submit(self, initials: str, score: int) -> int | None:
-          """Insert or update. Returns the 0-based rank if accepted, else None."""
-      def top(self) -> list[tuple[str, int]]: ...   # sorted high → low
-  ```
-
-- **Initial-deduplication rule** (implementer: read this carefully):
-  - `initials` is always exactly 3 uppercase A–Z letters. `submit` validates and uppercases.
-  - If an entry with the same initials already exists:
-    - If the new score is **strictly greater**, update that entry's score in place and re-sort. Return its new rank.
-    - If the new score is **less than or equal**, do nothing and return `None` (even if the new score would otherwise have qualified under different initials — same initials means "this player already has a better record").
-  - If no entry with those initials exists and the list has fewer than 10 entries, append.
-  - If no entry with those initials exists and the list is full, replace the lowest-scoring entry **only if** the new score is strictly greater than that lowest score.
-  - After every accepted submission, sort high → low and truncate to 10.
-
-- **File format** (`leaderboard.json` next to `main.py`):
-
-  ```json
-  [
-    {"initials": "BRY", "score": 12345},
-    {"initials": "AAA", "score": 9000}
-  ]
-  ```
-
-- Add to [settings.py](../settings.py) `AssetPaths`:
-  - `LEADERBOARD = os.path.join(BASE_DIR, "leaderboard.json")`
-
-- `Leaderboard` is owned by `GameManager` (one instance for the whole process). Title scene reads it for the HI line; game-over scene reads/writes via `submit`.
+## Pass 2 — Score, leaderboard, persistence (remaining)
 
 ### 2.4 Initials-entry scene
 
-- [ ] Create [ui/scenes/initials_entry_scene.py](../ui/scenes/initials_entry_scene.py).
+- [x] Create [ui/scenes/initials_entry_scene.py](../ui/scenes/initials_entry_scene.py).
 - Reached **only** from `GameOverScene` when `leaderboard.qualifies(score)` is true. If the score doesn't qualify, `GameOverScene` skips this scene and shows the regular game-over layout straight away.
 - Layout (centered column on a black background):
   - Line 1 (top, large): **"NEW HIGH SCORE"** at `UiSettings.OVERLAY_FONT_SIZE`.
@@ -244,7 +81,7 @@ to show, and gives players a reason to keep playing.
 
 ### 2.5 Leaderboard display scene
 
-- [ ] Create [ui/scenes/leaderboard_scene.py](../ui/scenes/leaderboard_scene.py).
+- [x] Create [ui/scenes/leaderboard_scene.py](../ui/scenes/leaderboard_scene.py).
 - Reached from:
   - `InitialsEntryScene` after submit.
   - `GameOverScene` after a non-qualifying death (no initials prompt — this scene replaces the bare "GAME OVER" screen for non-qualifying runs once the leaderboard exists).
@@ -266,12 +103,9 @@ to show, and gives players a reason to keep playing.
 
 ### 2.6 Wire it all together
 
-- [ ] `GameOverScene.on_enter` should:
-  1. Stop music; play scream SFX (already done today).
-  2. If `game.leaderboard.qualifies(score)`, change to `InitialsEntryScene(score)`.
-  3. Else, change to `LeaderboardScene(score, highlight=None)`.
-- [ ] `TitleScene.render` reads `game.leaderboard.top()[0]` (or the empty case) for the HI line.
-- [ ] `Hud.draw` reads the same.
+- [x] `GameOverScene.on_enter` routes to `InitialsEntryScene` when qualifies, else `LeaderboardScene`.
+- [x] `Hud.draw` reads `game.leaderboard.top()[0]` for the HI center label.
+- Note: `TitleScene` intentionally has no HI line per the title-screen lock rule in `copilot-instructions.md`.
 
 ---
 

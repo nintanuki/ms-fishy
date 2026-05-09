@@ -201,9 +201,70 @@ doing the actual implementation.
 **Why:** Architecture doc must reflect the joystick-caching fix.
 **Editor:** GitHub Copilot (Claude Sonnet 4.6)
 
----
 
 ## 2026-05-09 — bug fixes, function consolidation, guardrail rules
+
+## 2026-05-09 — Initials/leaderboard UI polish + HUD redesign
+
+**File:** settings.py
+**Lines (at time of edit):** ColorSettings, UiSettings (modified)
+**Before:**
+    HIGH_SCORE_LABEL = "HI: " in UiSettings; no GRAY color; no INITIALS_* layout constants; no HUD_FONT_SIZE_SMALL.
+**After:**
+    Removed HIGH_SCORE_LABEL (dead after HUD center change).
+    Added ColorSettings.GRAY = (140, 140, 140).
+    Added UiSettings.HUD_FONT_SIZE_SMALL = 16.
+    Added initials entry layout constants: INITIALS_TITLE_Y_RATIO, INITIALS_SCORE_Y_RATIO,
+    INITIALS_PROMPT_Y_RATIO, INITIALS_SLOTS_Y_RATIO, INITIALS_SLOT_GAP.
+**Why:** User requested tunable Y positions and font sizes for each line of the initials
+    entry screen. Smaller HUD font needed for compact in-game display.
+
+**File:** ui/scenes/initials_entry_scene.py
+**Lines (at time of edit):** render, _draw_slots (modified)
+**Before:**
+    Rendered "SCORE: NNNNN" label and "PRESS START WHEN DONE" footer.
+    Active slot highlighted with a white box outline (pygame.draw.rect width=2).
+    Y positions were hardcoded offsets from screen center.
+**After:**
+    Score line shows the number only (no "SCORE:" prefix).
+    "PRESS START WHEN DONE" line removed.
+    Active slot uses color + underline: active letter in WHITE with a 3px underline bar;
+    inactive letters in GRAY. No box drawn.
+    Y positions driven by INITIALS_*_Y_RATIO constants from settings.
+**Why:** User found the box cluttered and the footer redundant; wanted tunable layout.
+
+**File:** ui/scenes/leaderboard_scene.py
+**Lines (at time of edit):** render, _draw_entries (modified)
+**Before:**
+    Rendered "SCORE: NNNNN" subheader at y=130; entries started at y=175.
+    Highlighted row used a white background rect (white box) with black text.
+**After:**
+    "SCORE: NNNNN" subheader removed. Entries start at y=120 to close the gap.
+    White box removed; highlighted row now uses YELLOW text.
+**Why:** User found the score text was obscured by the highlight box; wanted both removed.
+
+**File:** ui/hud.py
+**Lines (at time of edit):** entire file (modified)
+**Before:**
+    Center: HI score from leaderboard. Right: SCORE. No timer. Leaderboard dependency.
+**After:**
+    Center: SCORE (player's current run score). Right: TIME MM:SS (counts up).
+    leaderboard parameter and _high_score_text removed.
+    draw() accepts a seconds: int = 0 parameter for the timer display.
+**Why:** User requested score in center and a running timer on the right.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** __init__, update, render (modified)
+**Before:**
+    HUD font used HUD_FONT_SIZE (24pt). Hud constructed with leaderboard kwarg.
+    hud.draw(screen) called with no arguments.
+**After:**
+    HUD font uses HUD_FONT_SIZE_SMALL (16pt). Hud constructed without leaderboard.
+    _elapsed_frames counter increments each ACTIVE frame.
+    hud.draw(screen, self._elapsed_frames // ScreenSettings.FPS) passes elapsed seconds.
+**Why:** Smaller HUD text; wires the new timer into the draw call.
+
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
 
 **File:** main.py
 **Lines (at time of edit):** ~118-128 (reset_game consolidated), ~183 (enter key), ~190 (start button), ~248 (game-over render), ~255-262 (_draw_centered_overlay)
@@ -404,6 +465,41 @@ doing the actual implementation.
 **After:**
     `- [x] Create ui/hud.py ...`
 **Why:** Marks completion of the implemented roadmap item.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T22:10:00-04:00 — initials/leaderboard readability pass (requested UI polish)
+
+**File:** ui/scenes/initials_entry_scene.py
+**Lines (at time of edit):** `render`, `_draw_slots` (modified)
+**Before:**
+    Header used large "NEW HIGH SCORE" on one line with score on a separate line.
+    "ENTER YOUR INITIALS" rendered in white.
+    Active slot was white with an extra underline bar.
+**After:**
+    Header now uses HUD-size text and renders as one row: `NEW HIGH SCORE:` + score value.
+    Score value is yellow; prompt text `ENTER YOUR INITIALS` is light blue.
+    Active slot highlight is yellow text only; underline removed.
+**Why:** Reduce clutter and improve visual hierarchy while keeping active-character focus clear.
+
+**File:** settings.py
+**Lines (at time of edit):** `UiSettings` (modified)
+**Before:**
+    No constant for title/score inline spacing or leaderboard first-row spacing.
+**After:**
+    Added `INITIALS_TITLE_SCORE_GAP` and `LEADERBOARD_ENTRIES_START_Y`.
+    Removed unused `INITIALS_SCORE_Y_RATIO` after moving to a single-line header row.
+**Why:** Keep layout tuning in settings and avoid dead constants.
+
+**File:** ui/scenes/leaderboard_scene.py
+**Lines (at time of edit):** `_draw_entries` (modified)
+**Before:**
+    First leaderboard entry started at fixed y=120.
+**After:**
+    First leaderboard entry now starts at `UiSettings.LEADERBOARD_ENTRIES_START_Y` (150 default).
+**Why:** Adds more padding between `GAME OVER` and the first leaderboard row.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
 
@@ -677,6 +773,52 @@ doing the actual implementation.
 **After:** `FishManager` with `spawn_fish`, `check_collisions` (eat smaller fish → grow player; eaten by larger fish → exit), and `grow_player`.
 **Why:** Centralizes all fish lifecycle logic, keeping `GameManager` thin.
 **Editor:** Bryan
+
+---
+
+## 2026-05-09 — Pass 2.4/2.5/2.6 — initials entry, leaderboard display, game-over routing
+
+**File:** ui/scenes/initials_entry_scene.py
+**Lines (at time of edit):** (new file)
+**After:**
+    `InitialsEntryScene` class with three-slot letter editor.
+    Keyboard: A-Z types a letter and advances cursor; Backspace clears/steps back; arrows
+    cycle letters up/down and move cursor left/right; Enter commits.
+    Controller: START commits; D-pad hat up/down cycles; D-pad left/right moves cursor.
+    On commit, empty slots fill with 'A', initials are submitted to `game.leaderboard`,
+    leaderboard is saved, then scene transitions to `LeaderboardScene`.
+**Why:** Implements Pass 2.4 — the qualifying high-score initials prompt.
+
+**File:** ui/scenes/leaderboard_scene.py
+**Lines (at time of edit):** (new file)
+**After:**
+    `LeaderboardScene` class that renders: "GAME OVER" header, run score, up-to-10 ranked
+    rows from `game.leaderboard.top()`, an optional white-background highlight for the
+    player's just-submitted row, and a "PRESS START TO RETURN TO TITLE" footer.
+    Enter/START transitions back to `TitleScene`.
+**Why:** Implements Pass 2.5 — the post-game leaderboard display replacing the old bare GAME OVER screen.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 1-75 (replaced)
+**Before:**
+    Rendered a black screen with "GAME OVER" text; Enter/START restarted directly to PlayScene.
+    Had `qualifies_for_leaderboard` flag and `_score_qualifies_for_leaderboard` helper but
+    did not act on them.
+**After:**
+    `GameOverScene` is now a zero-frame router. `on_enter` immediately calls
+    `game.leaderboard.qualifies(score)` and routes to `InitialsEntryScene` or
+    `LeaderboardScene` accordingly. `render` is a no-op.
+    Removed: `_score_qualifies_for_leaderboard`, `handle_event`, `_restart`, and the
+    "GAME OVER" render path (now owned by `LeaderboardScene`).
+**Why:** Implements Pass 2.6 wiring — game-over state now dispatches into the correct post-game scene.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 2 section (modified)
+**Before:** Items 2.4, 2.5, 2.6 marked `[ ]`.
+**After:** Items 2.4, 2.5, 2.6 marked `[x]`. Pass 1 and completed Pass 2 items moved to the Completed section; Pass 1 section removed; Pass 2 header updated to "(remaining)".
+**Why:** Reflects all completed work and cleans up the active roadmap.
+
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
 
 ---
 
@@ -1650,5 +1792,33 @@ doing the actual implementation.
 **After:**
     `return False, eaten_sizes` is now outside the loop so no-collision frames return a tuple.
 **Why:** Fixes `TypeError: cannot unpack non-iterable NoneType object` in `PlayScene.update()` immediately after gameplay begins.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T22:22:00-04:00 — initials screen equal-gap centered stack
+
+**File:** settings.py
+**Lines (at time of edit):** `UiSettings` initials layout constants (modified)
+**Before:**
+    Initials layout used independent Y-ratio constants:
+    `INITIALS_TITLE_Y_RATIO`, `INITIALS_PROMPT_Y_RATIO`, `INITIALS_SLOTS_Y_RATIO`.
+**After:**
+    Replaced with centered-stack controls:
+    `INITIALS_BLOCK_CENTER_Y_RATIO` and `INITIALS_BLOCK_ROW_GAP`.
+**Why:** User requested row 1 (`NEW HIGH SCORE`), row 2 (`ENTER YOUR INITIALS`), and row 3 (initials slots) to have equal vertical spacing and be centered as a single block.
+
+**File:** ui/scenes/initials_entry_scene.py
+**Lines (at time of edit):** `render` layout math (modified)
+**Before:**
+    Title row, prompt row, and initials row each used separate Y ratios.
+**After:**
+    Layout now computes:
+    - `block_center_y = h * INITIALS_BLOCK_CENTER_Y_RATIO`
+    - row 1 at `block_center_y - INITIALS_BLOCK_ROW_GAP`
+    - row 2 at `block_center_y`
+    - row 3 at `block_center_y + INITIALS_BLOCK_ROW_GAP`
+**Why:** Guarantees equal spacing between row 1->2 and 2->3 while centering the whole trio vertically.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
