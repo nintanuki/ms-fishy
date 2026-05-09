@@ -192,6 +192,8 @@ class AssetPaths:
         ASSETS_DIR, 'graphics', 'effects', 'tv.png'
     )
 
+    LEADERBOARD = os.path.join(BASE_DIR, 'leaderboard.json')
+
 
 class AudioSettings:
     """Global audio toggles, mixer-level defaults, and the sound/music registry.

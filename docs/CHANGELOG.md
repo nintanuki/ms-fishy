@@ -407,6 +407,141 @@ doing the actual implementation.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
 
+---
+
+## 2026-05-09T21:05:00-04:00 — architecture guardrail: lock title screen layout
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 281-284 (modified)
+**Before:**
+    Project rules only documented the no-imported-visual-assets rule.
+**After:**
+    Added explicit title-screen lock rule: keep `TitleScene` to exactly two centered lines
+    (`MS. FISHY` and `PRESS START TO PLAY`) over ocean background + background fish,
+    and do not add score/high-score/extra prompts unless explicitly requested by the user.
+**Why:** Mirrors the same guardrail already added to copilot instructions so future changes do not reintroduce unwanted title-screen text.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T17:43:19-04:00 — title screen lock: remove HI line and document guardrail
+
+**File:** ui/scenes/title_scene.py
+**Lines (at time of edit):** 54-61, 108-123 (modified)
+**Before:**
+    Title scene included `_high_score_text()` and rendered a third line below the start prompt,
+    showing either `HI: NNNNN  XYZ` or `HI: -----`.
+**After:**
+    Removed `_high_score_text()` and removed the third centered draw call.
+    Title scene now renders only `MS. FISHY` and `PRESS START TO PLAY`.
+**Why:** User explicitly requested removing `HI: -----` from the title screen and keeping the title layout minimal.
+
+**File:** settings.py
+**Lines (at time of edit):** 54 (modified)
+**Before:**
+    `UiSettings` included `TITLE_HIGH_SCORE_OFFSET_RATIO` for the title-screen HI row.
+**After:**
+    Removed `TITLE_HIGH_SCORE_OFFSET_RATIO`.
+**Why:** Constant became unused after removing the title-screen HI row.
+
+**File:** .github/copilot-instructions.md
+**Lines (at time of edit):** 76 (modified)
+**Before:**
+    General UI-change guardrail existed, but no explicit title-screen lock.
+**After:**
+    Added explicit rule: keep `TitleScene` to exactly two centered lines (`MS. FISHY` and
+    `PRESS START TO PLAY`) over ocean background + background fish unless user explicitly requests otherwise.
+**Why:** Prevents future Copilot sessions from reintroducing title-screen extras without direct user instruction.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 62, 111 (modified)
+**Before:**
+    `TitleScene` render bullet included the high-score line.
+    `Leaderboard` consumer bullet listed both `TitleScene` and `Hud`.
+**After:**
+    `TitleScene` render bullet now lists title + start prompt only.
+    `Leaderboard` consumers now list `Hud` only.
+**Why:** Documentation-truth update so architecture matches runtime behavior.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** 114, 119-122 (modified)
+**Before:**
+    Completed title-scene spec still required a high-score line below the prompt and referenced
+    `HIGH_SCORE_LABEL` under title-scene settings.
+**After:**
+    Removed the high-score line requirement from TitleScene visuals and removed that title-specific
+    `HIGH_SCORE_LABEL` note.
+**Why:** Removes stale completed-spec text that contradicted the user-approved title layout.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T17:36:00-04:00 — pass 2.3 leaderboard model + persistence
+
+**File:** systems/leaderboard.py
+**Lines (at time of edit):** (new file)
+**After:**
+    Added `Leaderboard` service with `load`, `save` (atomic replace),
+    `qualifies`, `submit`, and `top` methods.
+    Implemented initials validation (exactly 3 letters A-Z), initials-dedup
+    score-update rule, top-10 sort/truncate behavior, and JSON persistence.
+**Why:** Completes the next roadmap item (Pass 2.3) by adding a process-wide leaderboard model.
+
+**File:** settings.py
+**Lines (at time of edit):** 55, 196 (modified)
+**Before:**
+    No title high-score offset ratio setting.
+    No `AssetPaths.LEADERBOARD` path.
+**After:**
+    Added `UiSettings.TITLE_HIGH_SCORE_OFFSET_RATIO`.
+    Added `AssetPaths.LEADERBOARD = os.path.join(BASE_DIR, 'leaderboard.json')`.
+**Why:** Keeps title layout and leaderboard file path centralized in settings.
+
+**File:** main.py
+**Lines (at time of edit):** 7, 41-42 (modified)
+**Before:**
+    `GameManager` did not own a leaderboard instance.
+**After:**
+    Imported `Leaderboard`, created `self.leaderboard`, and called `load()` during boot.
+**Why:** Makes leaderboard state process-wide and available to all scenes.
+
+**File:** ui/scenes/title_scene.py
+**Lines (at time of edit):** 54-61, 110-123 (modified)
+**Before:**
+    Title scene rendered only title and start prompt.
+**After:**
+    Added `_high_score_text()` and rendered a centered high-score line below the prompt using leaderboard top entry or `HI: -----` fallback.
+**Why:** Implements title-scene leaderboard read path required by Pass 2.3.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 25, 29-35 (modified)
+**Before:**
+    Game-over scene did not query leaderboard qualification.
+**After:**
+    Added `qualifies_for_leaderboard` state and `_score_qualifies_for_leaderboard()` helper called on enter.
+**Why:** Prepares the game-over flow to branch into initials-entry logic in the next roadmap task.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 30, 65, 85, 104-111, 204, 271 (modified)
+**Before:**
+    Architecture doc described leaderboard integration as future work.
+**After:**
+    Documented GameManager leaderboard ownership, title high-score rendering,
+    game-over qualification read, and added a dedicated `Leaderboard` subsystem section.
+**Why:** Keeps architecture docs aligned with implemented systems.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** 187 (modified)
+**Before:**
+    `- [ ] Create [systems/leaderboard.py](../systems/leaderboard.py):`
+**After:**
+    `- [x] Create [systems/leaderboard.py](../systems/leaderboard.py):`
+**Why:** Marks Pass 2.3 as completed.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
 **File:** README.md
 **Lines (at time of edit):** 6 (modified)
 **Before:** `"Sprites are placeholder colored squares — no art yet. No score, no title screen, no game-over screen."`

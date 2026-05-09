@@ -73,6 +73,7 @@ If a question is asked about *why* code was written a certain way, that is a req
 - ALL text displayed to the user in-game must be **ALL CAPS**. The pixel font (`Pixeled`) is designed for caps-style retro display.
 - Documentation files stay in normal sentence case.
 - **Do not add, remove, or modify any in-game UI element, text string, or screen layout unless the user explicitly asks for it.** If the user requests a simple screen (e.g. "just show GAME OVER"), implement exactly that — nothing more.
+- **Title-screen lock:** keep `TitleScene` to exactly two centered text lines (`MS. FISHY` and `PRESS START TO PLAY`) over the ocean background + background fish. Do not add score/high-score/extra prompts there unless the user explicitly requests it.
 
 ## Mental testing checklist
 

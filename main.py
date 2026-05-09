@@ -4,6 +4,7 @@ import pygame
 import sys
 
 from systems.audio_manager import AudioManager
+from systems.leaderboard import Leaderboard
 from systems.scene_manager import SceneManager
 from crt import CRT
 from settings import (
@@ -37,6 +38,8 @@ class GameManager:
         self._load_fonts()
 
         self.audio = AudioManager()
+        self.leaderboard = Leaderboard()
+        self.leaderboard.load()
 
         # Post-processing: tracked separately because the CRT pass is skipped
         # when the player is already on a real CRT (i.e. fullscreen on the cabinet).

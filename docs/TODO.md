@@ -111,14 +111,12 @@ Replace the string-based `game_state` with first-class `Scene` objects.
   - Same ocean gradient background as the play scene. Reuse the `build_gradient_surface` helper — move it to `utils/graphics.py` if needed by both scenes.
   - Title text **"MS. FISHY"** centered horizontally, vertically positioned at 35% screen height, rendered with `Pixeled.ttf` at a large size (add `UiSettings.TITLE_FONT_SIZE = 96` to [settings.py](../settings.py)).
   - Prompt text **"PRESS START TO PLAY"** centered horizontally, vertically positioned at 60% screen height, at `UiSettings.OVERLAY_FONT_SIZE`.
-  - Below the prompt, render the current top high-score line **"HI: NNNNN  XYZ"** (zero-padded score, then the initials) centered. If the leaderboard is empty, render **"HI: -----"**. Use `UiSettings.OVERLAY_FONT_SIZE`.
   - **Background fish swim across the screen** while the title is showing. Reuse `FishManager` exactly — instantiate it inside `TitleScene` and call its `update(player=None)`. To make `FishManager.update` accept `None`, change its signature so when `player is None` it skips the collision step and only spawns/moves fish. Returns `(False, 0)` in that case.
 - Input:
   - `Enter` (keyboard) or `START` (controller) transitions to `PlayScene`. **Important:** the title scene's fish must **not** be passed to the play scene — the play scene creates its own fresh `FishManager`.
 - Add the title text and prompt to [settings.py](../settings.py) `UiSettings`:
   - `TITLE_TEXT = "MS. FISHY"`
   - `START_PROMPT_TEXT = "PRESS START TO PLAY"`
-  - `HIGH_SCORE_LABEL = "HI: "`
 - Acceptance: launching the game shows the title screen; fish drift across; Enter/START starts a new run with no fish on-screen.
 
 ### 1.5 `PlayScene` + player drop-in animation
@@ -184,7 +182,7 @@ to show, and gives players a reason to keep playing.
 
 ### 2.3 Leaderboard model + persistence
 
-- [ ] Create [systems/leaderboard.py](../systems/leaderboard.py):
+- [x] Create [systems/leaderboard.py](../systems/leaderboard.py):
 
   ```python
   class Leaderboard:

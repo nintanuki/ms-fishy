@@ -22,10 +22,17 @@ class GameOverScene(Scene):
         """
         super().__init__(game)
         self.score = score
+        self.qualifies_for_leaderboard = False
 
     def on_enter(self) -> None:
         """Called when entering this scene from another scene."""
-        pass
+        self.qualifies_for_leaderboard = self._score_qualifies_for_leaderboard()
+
+    def _score_qualifies_for_leaderboard(self) -> bool:
+        """Return whether the ending score qualifies for leaderboard entry."""
+        if self.score is None:
+            return False
+        return self.game.leaderboard.qualifies(self.score.total)
 
     def on_exit(self) -> None:
         """Called when leaving this scene."""

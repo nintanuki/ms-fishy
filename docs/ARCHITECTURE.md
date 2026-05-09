@@ -27,7 +27,7 @@
                    (gameplay)   (title)     (game-over)
 ```
 
-`GameManager` owns the screen, the clock, the cached joystick list, the fullscreen flag, and a `SceneManager` instance. Global input (Esc quit, F11 fullscreen, controller quit-chord, BACK) is handled by `GameManager`. Everything else — gameplay, scenes, UI, audio, persistence — is coordinated through scenes and the `SceneManager`.
+`GameManager` owns the screen, the clock, the cached joystick list, the fullscreen flag, a process-wide `Leaderboard` instance, and a `SceneManager` instance. Global input (Esc quit, F11 fullscreen, controller quit-chord, BACK) is handled by `GameManager`. Everything else — gameplay, scenes, UI, audio, persistence — is coordinated through scenes and the `SceneManager`.
 
 ## 2. Frame loop
 
@@ -82,6 +82,7 @@ Displays the game-over screen.
 
 - **Render:** Black background + centered game-over text.
 - **Data:** Receives the ended run `Score` object from `PlayScene`.
+- **Data:** Reads leaderboard qualification state for the ended run score.
 - **Handle Events:** Enter/START transitions to a fresh PlayScene.
 
 ### `Score` (`core/score.py`)
@@ -99,6 +100,15 @@ Lightweight gameplay overlay widget owned by `PlayScene`.
 - Inputs: run `Score`, HUD font, optional leaderboard service.
 - Layout: top-left fish count (`FISH: NN`), top-right run score (`SCORE: NNNNN`), top-center top score (`HI: NNNNN  XYZ` or `HI: -----`).
 - Draw order: rendered after world sprites and before the CRT pass.
+
+### `Leaderboard` (`systems/leaderboard.py`)
+
+Process-scoped high-score service owned by `GameManager`.
+
+- Persistence: loads and saves JSON at `AssetPaths.LEADERBOARD`.
+- Table shape: top-10 entries sorted high-to-low.
+- Initials rule: `submit` accepts only 3-letter A-Z initials, updates existing initials only on strictly better scores, and otherwise inserts/replaces by score cutoff.
+- Consumers: currently read by `Hud`; game-over flow uses `qualifies` to prepare the initials-entry path in later pass items.
 
 
 
@@ -191,6 +201,7 @@ systems/
   scene_manager.py              Scene manager for state transitions.
   fish_manager.py               Fish spawning, collision, and player growth.
   audio_manager.py              Data-driven sound and music system.
+  leaderboard.py                Top-10 leaderboard model + JSON persistence.
 ui/
   hud.py                         Gameplay HUD widget (fish count, score, high score).
   scenes/
@@ -257,7 +268,7 @@ describes the `AudioSettings` contract the manager expects.
 ## 11. Extension points
 
 - **More scenes:** add `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 2).
-- **Leaderboard integration:** wire `Leaderboard` ownership into `GameManager` and feed it to title, HUD, and game-over flow.
+- **Leaderboard scenes:** finish `InitialsEntryScene` and `LeaderboardScene` transitions and persistence writes during game-over flow.
 - **Sprite art:** replace the `pygame.Surface` placeholders in `Player.__init__` and `Fish.__init__` with loaded images.
 
 ## 12. Project rules
@@ -268,3 +279,7 @@ describes the `AudioSettings` contract the manager expects.
   font files are allowed. The CRT overlay PNG
   (`assets/graphics/effects/tv.png`) is grandfathered as the only exception;
   do not add new image files.
+- **Title-screen lock.** Keep `TitleScene` to exactly two centered text lines
+  (`MS. FISHY` and `PRESS START TO PLAY`) over the ocean background and
+  background fish. Do not add score/high-score/extra prompt text unless the
+  user explicitly requests it.
