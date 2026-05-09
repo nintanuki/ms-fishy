@@ -1,1 +1,1 @@
-Gulp sound effect from [Soundolisk](https://www.youtube.com/watch?v=KMZbkLlwsmc)
+"Gulp" sound effect from eating a fish and "NO!" dialog from Game Over performed by my lovely wife.
