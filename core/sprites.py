@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import pygame
 import random
-from settings import ColorSettings, FishSettings, InputSettings, PlayerSettings, ScreenSettings
+from settings import (
+    ColorSettings,
+    DebugSettings,
+    FishSettings,
+    InputSettings,
+    PlayerSettings,
+    ScreenSettings,
+)
 
 
 def build_fish_surface(
@@ -150,11 +157,16 @@ class Player(pygame.sprite.Sprite):
             y: Starting y-coordinate in pixels.
         """
         super().__init__()
+        starting_size = (
+            DebugSettings.LARGE_PLAYER_SIZE
+            if DebugSettings.START_LARGE_PLAYER
+            else PlayerSettings.SIZE
+        )
         # size is stored as float so fractional growth from PLAYER_GROWTH_COEFFICIENT
         # accumulates across multiple fish eaten instead of being discarded by int()
         # on every grow() call (e.g. eating a size-8 fish gives 0.8 px growth; int
         # would round that to 0 each time, making growth invisible for small fish).
-        self.size = float(PlayerSettings.SIZE)
+        self.size = float(starting_size)
         self.base_image, _, self.bow_offset_y = build_fish_surface(
             int(self.size),
             PlayerSettings.COLOR_TOP,

@@ -46,6 +46,10 @@ class UiSettings:
     """UI text content and font-size settings for gameplay overlays."""
 
     GAME_OVER_TEXT = "GAME OVER"
+    EATEN_BY_BIGGER_FISH_TEXT = "YOU WERE EATEN BY A BIGGER FISH"
+    ATE_ALL_FISH_TEXT = "YOU'VE EATEN ALL THE FISH!"
+    EATEN_BY_BIGGER_FISH_COLOR = ColorSettings.RED
+    ATE_ALL_FISH_COLOR = ColorSettings.GREEN
     PAUSE_TEXT = "PAUSED"
     TITLE_TEXT = "MS. FISHY"
     START_PROMPT_TEXT = "PRESS START TO PLAY"
@@ -54,6 +58,7 @@ class UiSettings:
     TITLE_CENTER_Y_RATIO = 0.50  # Vertical title anchor as fraction of screen height.
     START_PROMPT_CENTER_Y_RATIO = 0.68  # Vertical prompt anchor as fraction of screen height.
     OVERLAY_FONT_SIZE = 52    # Primary overlay font size in points.
+    OUTCOME_MESSAGE_FONT_SIZE = 36  # Shared font size for pre-GAME OVER lose/win messages.
     HUD_FONT_SIZE = 24        # HUD font size in points for fish count and score labels.
     HUD_FONT_SIZE_SMALL = 16  # Compact HUD font size in points for in-game display.
     HUD_PADDING = 16          # Pixel inset from screen edges for HUD labels.
@@ -256,4 +261,10 @@ class AudioSettings:
 
 class DebugSettings:
     """Settings related to debugging features."""
-    pass
+
+    # When True, gameplay starts with a larger player body width to speed up
+    # end-game testing.
+    START_LARGE_PLAYER = False
+
+    # Initial player body width in pixels used when START_LARGE_PLAYER is True.
+    LARGE_PLAYER_SIZE = 640

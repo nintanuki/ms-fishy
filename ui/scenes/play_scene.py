@@ -28,6 +28,9 @@ class PlayScene(Scene):
     ACTIVE = "active"
     PAUSED = "paused"
 
+    LOSS_EATEN_BY_BIGGER_FISH = "loss_eaten_by_bigger_fish"
+    WIN_ATE_ALL_FISH = "win_ate_all_fish"
+
     def __init__(self, game, play_intro_splash: bool = False):
         """Initialize the play scene with a fresh player, score, and fish manager.
         
@@ -84,6 +87,19 @@ class PlayScene(Scene):
             self._state = self.ACTIVE
             self.game.audio.play("pause_out")
             self.game.audio.resume_music()
+
+    def _end_run(self, outcome: str, play_scream: bool) -> None:
+        """Stop gameplay audio and transition to game-over messaging.
+
+        Args:
+            outcome: End-of-run outcome reason consumed by GameOverScene.
+            play_scream: Whether to play the scream SFX for this ending.
+        """
+        self.game.audio.stop_music()
+        if play_scream:
+            self.game.audio.play("scream")
+        from ui.scenes.game_over_scene import GameOverScene
+        self.game.scenes.change_to(GameOverScene(self.game, self.score, outcome=outcome))
 
     def _update_drop_in_motion(self) -> None:
         """Advance the one-time player drop-in animation without reading input."""
@@ -179,11 +195,13 @@ class PlayScene(Scene):
         if eaten_sizes:
             self.game.audio.play("gulp")
         if game_over:
-            # Transition to game-over scene
-            self.game.audio.stop_music()
-            self.game.audio.play("scream")
-            from ui.scenes.game_over_scene import GameOverScene
-            self.game.scenes.change_to(GameOverScene(self.game, self.score))
+            self._end_run(self.LOSS_EATEN_BY_BIGGER_FISH, play_scream=True)
+            return
+
+        # Win condition: once the player sprite exceeds the screen width,
+        # the run ends and transitions through the custom victory flow.
+        if self.player.rect.width > ScreenSettings.WIDTH:
+            self._end_run(self.WIN_ATE_ALL_FISH, play_scream=False)
 
     def render(self, screen: pygame.Surface) -> None:
         """Draw the play scene to the screen.

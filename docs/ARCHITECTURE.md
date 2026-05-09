@@ -73,17 +73,23 @@ Handles active gameplay and pausing. Owns the player, run `Score`, all sprites, 
   - During drop-in: if title-started, play one-shot `splash` SFX exactly when the player first crosses into the visible screen from the top.
   - On drop-in settle: start/resume gameplay music and switch to `ACTIVE`.
   - `ACTIVE`: advances sprites and fish manager; records fish sizes from collision results into `Score`; checks for game-over and transitions to `GameOverScene(score=...)` if needed.
+  - `ACTIVE` additionally treats `player.rect.width > ScreenSettings.WIDTH` as a win condition (`WIN_ATE_ALL_FISH`) and transitions to `GameOverScene` with a victory outcome.
   - `PAUSED`: no world updates.
 - **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. During `ACTIVE`, `Hud.draw(screen)` is called after world sprites so score labels sit on top of gameplay. `PAUSED` draws black background + centered pause text.
 
 #### `GameOverScene` (`ui/scenes/game_over_scene.py`)
 
-Displays the game-over screen.
+Displays a two-step end-of-run flow before leaderboard routing.
 
-- **Render:** Black background + centered game-over text.
-- **Data:** Receives the ended run `Score` object from `PlayScene`.
-- **Data:** Reads leaderboard qualification state for the ended run score.
-- **Handle Events:** Enter/START transitions to a fresh PlayScene.
+- **Phase 1 render:** Black background + centered outcome text.
+  - Loss path: `YOU WERE EATEN BY A BIGGER FISH`
+  - Win path: `YOU'VE EATEN ALL THE FISH!`
+  - Font size: `UiSettings.OUTCOME_MESSAGE_FONT_SIZE`.
+- **Phase 2 render:** Black background + centered `GAME OVER`.
+  - Font size: `UiSettings.OVERLAY_FONT_SIZE`.
+- **Input:** Enter / controller A / controller START advances phase; from phase 2 it routes onward.
+- **Routing:** If `leaderboard.qualifies(score.total)` → `InitialsEntryScene`; else → `LeaderboardScene`.
+- **Data:** Receives both run `Score` and a run-ending `outcome` from `PlayScene`.
 
 ### `Score` (`core/score.py`)
 
@@ -183,7 +189,7 @@ Single source of truth for all tunables.
 | `FontSettings`   | Font file path.                                                       |
 | `AudioSettings`  | Mute toggles + music volume + per-sound volume toggles.              |
 | `AssetPaths`     | `__file__`-relative paths for non-font assets.                        |
-| `DebugSettings`  | Debug-only toggles.                                                   |
+| `DebugSettings`  | Debug-only toggles (including optional large-player start for end-game testing). |
 
 **No magic numbers anywhere outside this file.**
 

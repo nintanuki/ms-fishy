@@ -35,10 +35,12 @@ python main.py
 15. Fish appear from the left or right edge and scroll across the screen.
 16. Fish that reach the opposite edge disappear without error.
 17. When the player overlaps a fish smaller than itself: the fish disappears and the player grows visibly.
-18. When the player overlaps a fish larger than itself: a black game-over screen appears with centered white `GAME OVER` text (no abrupt process exit, no additional prompt).
-19. Pressing `Enter` during gameplay pauses updates, pauses music, and shows a black pause screen with centered white pause text.
-20. Pressing `Enter` on pause resumes gameplay, resumes music, and hides the pause overlay.
-21. Pressing `Enter` on game-over restarts the session.
+18. When the player overlaps a fish larger than itself: a black screen appears with centered white `YOU WERE EATEN BY A BIGGER FISH`.
+19. Pressing `Enter`, controller `A`, or controller `START` on that screen advances to a centered white `GAME OVER` screen.
+20. Pressing `Enter`, controller `A`, or controller `START` again routes to the normal post-run flow (initials entry if qualifying, otherwise leaderboard).
+21. If the player grows so wide that `player.rect.width > ScreenSettings.WIDTH`, gameplay ends with centered white `YOU'VE EATEN ALL THE FISH!`; one confirm advances to `GAME OVER`, second confirm routes to post-run flow.
+22. Pressing `Enter` during gameplay pauses updates, pauses music, and shows a black pause screen with centered white pause text.
+23. Pressing `Enter` on pause resumes gameplay, resumes music, and hides the pause overlay.
 
 ## Sign-off
 

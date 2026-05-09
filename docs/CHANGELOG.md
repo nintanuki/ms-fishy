@@ -470,6 +470,81 @@ doing the actual implementation.
 
 ---
 
+## 2026-05-09T23:44:00-04:00 — outcome text colors for loss/win messaging
+
+**File:** settings.py
+**Lines (at time of edit):** 51-52 (modified)
+**Before:**
+    EATEN_BY_BIGGER_FISH_TEXT = "YOU WERE EATEN BY A BIGGER FISH"
+    ATE_ALL_FISH_TEXT = "YOU'VE EATEN ALL THE FISH!"
+**After:**
+    EATEN_BY_BIGGER_FISH_TEXT = "YOU WERE EATEN BY A BIGGER FISH"
+    ATE_ALL_FISH_TEXT = "YOU'VE EATEN ALL THE FISH!"
+    EATEN_BY_BIGGER_FISH_COLOR = ColorSettings.RED
+    ATE_ALL_FISH_COLOR = ColorSettings.GREEN
+**Why:** Adds dedicated UI color settings so end-of-run outcome text can be styled by outcome without hardcoding colors in scene logic.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 88-95, 129 (modified)
+**Before:**
+    draw_centered_text(..., color=ColorSettings.WHITE, ...)
+**After:**
+    Added `_current_message_color()` to return:
+    - white for GAME OVER phase
+    - `UiSettings.ATE_ALL_FISH_COLOR` for victory
+    - `UiSettings.EATEN_BY_BIGGER_FISH_COLOR` for loss
+    and render now uses `color=self._current_message_color()`.
+**Why:** Implements requested behavior: loss message in red and victory message in green while preserving white GAME OVER text.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T23:35:00-04:00 — debug toggle for large player start (end-game testing)
+
+**File:** settings.py
+**Lines (at time of edit):** 260-268 (modified)
+**Before:**
+    class DebugSettings:
+        """Settings related to debugging features."""
+        pass
+**After:**
+    class DebugSettings:
+        """Settings related to debugging features."""
+
+        START_LARGE_PLAYER = False
+        LARGE_PLAYER_SIZE = 640
+**Why:** Adds a single debug switch and tunable size so testers can spawn as a larger fish and reach the end-game flow faster without changing normal gameplay defaults.
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 6-13 (imports), 160-169 (`Player.__init__`) (modified)
+**Before:**
+    from settings import ColorSettings, FishSettings, InputSettings, PlayerSettings, ScreenSettings
+    ...
+    self.size = float(PlayerSettings.SIZE)
+**After:**
+    from settings import (..., DebugSettings, ...)
+    ...
+    starting_size = (
+        DebugSettings.LARGE_PLAYER_SIZE
+        if DebugSettings.START_LARGE_PLAYER
+        else PlayerSettings.SIZE
+    )
+    self.size = float(starting_size)
+**Why:** Wires the new debug settings into player initialization so the larger start is opt-in and isolated to debug configuration.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 192 (modified)
+**Before:**
+    | `DebugSettings`  | Debug-only toggles.                                                   |
+**After:**
+    | `DebugSettings`  | Debug-only toggles (including optional large-player start for end-game testing). |
+**Why:** Keeps architecture docs aligned with runtime behavior after adding the new debug toggle.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
 ## 2026-05-09T22:10:00-04:00 — initials/leaderboard readability pass (requested UI polish)
 
 **File:** ui/scenes/initials_entry_scene.py
@@ -938,6 +1013,99 @@ doing the actual implementation.
 **After:** Describes Fishy — the eat-or-be-eaten game, its current status, controls, and links.
 **Why:** Docs reflected the template origin, not the actual game.
 **Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+---
+
+## 2026-05-09T18:30:00-04:00 — dedicated font size for pre-game-over outcome messages
+
+**File:** settings.py
+**Lines (at time of edit):** 59 (modified)
+**Before:**
+    Pre-`GAME OVER` outcome messages and `GAME OVER` shared `UiSettings.OVERLAY_FONT_SIZE`.
+**After:**
+    Added `UiSettings.OUTCOME_MESSAGE_FONT_SIZE = 36` for the two pre-game-over outcome messages.
+**Why:** User requested the lose/win condition messages to share their own smaller size without shrinking other overlay text.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 50-54, 108-117 (modified)
+**Before:**
+    `GameOverScene` used a single `_overlay_font` for both phase-1 outcome text and phase-2 `GAME OVER`.
+**After:**
+    Added `_outcome_font` built from `UiSettings.OUTCOME_MESSAGE_FONT_SIZE`.
+    `render()` now selects `_outcome_font` for phase 1 and `_overlay_font` for phase 2.
+**Why:** Keeps `GAME OVER` visual scale intact while ensuring long outcome lines fit on screen.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 86-89 (modified)
+**Before:**
+    Game-over phase description did not specify phase-specific font settings.
+**After:**
+    Documented phase-1 font as `UiSettings.OUTCOME_MESSAGE_FONT_SIZE` and phase-2 font as `UiSettings.OVERLAY_FONT_SIZE`.
+**Why:** Keeps architecture documentation aligned with runtime behavior.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T18:26:00-04:00 — custom end screens + screen-width victory condition
+
+**File:** settings.py
+**Lines (at time of edit):** 49-50 (modified)
+**Before:**
+    `UiSettings` only had generic `GAME OVER` text for end-of-run messaging.
+**After:**
+    Added:
+    - `EATEN_BY_BIGGER_FISH_TEXT = "YOU WERE EATEN BY A BIGGER FISH"`
+    - `ATE_ALL_FISH_TEXT = "YOU'VE EATEN ALL THE FISH!"`
+**Why:** Keeps new end-screen strings centralized in settings and avoids magic strings in scene code.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** 31-32, 91-106, 198-204 (modified)
+**Before:**
+    PlayScene had one game-over path from FishManager collision (`GAME OVER` flow only).
+**After:**
+    Added explicit outcomes (`LOSS_EATEN_BY_BIGGER_FISH`, `WIN_ATE_ALL_FISH`) and `_end_run(...)` helper.
+    Collision loss now transitions through `GameOverScene(..., outcome=loss)`.
+    Added win condition: if `player.rect.width > ScreenSettings.WIDTH`, transition through `GameOverScene(..., outcome=win)`.
+**Why:** Implements requested custom loss/victory endings while keeping transition logic DRY.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 13-112 (modified)
+**Before:**
+    Scene was a zero-frame router in `on_enter`, immediately jumping to initials-entry or leaderboard.
+**After:**
+    Scene now has a two-step flow:
+    1) show outcome message (`YOU WERE EATEN BY A BIGGER FISH` or `YOU'VE EATEN ALL THE FISH!`)
+    2) show `GAME OVER`
+    Third confirm routes to initials-entry or leaderboard.
+    Confirm inputs: Enter, controller A, controller START.
+**Why:** Matches requested UX: custom cause message first, then GAME OVER.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 76-89 (modified)
+**Before:**
+    PlayScene described only collision-based game-over; GameOverScene described immediate routing only.
+**After:**
+    Documented screen-width win condition and the two-phase GameOverScene message flow with routing behavior.
+**Why:** Keeps architecture docs truthful after gameplay-state changes.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** 108-109 (modified)
+**Before:**
+    No completed roadmap bullets for the new custom end-message flow or width-based victory condition.
+**After:**
+    Added completed bullets for both features under Pass 2.6 wiring.
+**Why:** Required roadmap maintenance for completed work.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** 38-43 (modified)
+**Before:**
+    Checklist expected immediate `GAME OVER` screen and restart behavior.
+**After:**
+    Checklist now validates two-step message flow (custom message -> `GAME OVER` -> post-run routing) and the new width-based victory ending.
+**Why:** Updates manual smoke checks to match implemented behavior.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
 
 **File:** docs/ARCHITECTURE.md
 **Lines (at time of edit):** 1-100 (replaced)

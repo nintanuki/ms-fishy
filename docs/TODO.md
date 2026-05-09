@@ -105,6 +105,8 @@ Within a pass, items are ordered low-to-high difficulty.
 
 - [x] `GameOverScene.on_enter` routes to `InitialsEntryScene` when qualifies, else `LeaderboardScene`.
 - [x] `Hud.draw` reads `game.leaderboard.top()[0]` for the HI center label.
+- [x] End-of-run messaging flow: cause text first (`YOU WERE EATEN BY A BIGGER FISH` or `YOU'VE EATEN ALL THE FISH!`), then `GAME OVER` on confirm, then leaderboard routing.
+- [x] Added victory end condition when player width exceeds screen width.
 - Note: `TitleScene` intentionally has no HI line per the title-screen lock rule in `copilot-instructions.md`.
 
 ---
@@ -134,7 +136,7 @@ land. Likely directions to revisit later:
 Last pass. These items make the game prettier without affecting gameplay.
 Everything here must be drawable with Pygame's draw API — no imported art.
 
-- [ ] **Black outline** on all fish (player and enemy) for legibility.
+- [X] **Black outline** on all fish (player and enemy) for legibility.
 - [ ] **Polygon-tier player shape** — once the player fish exceeds some
   fraction of screen size, rebuild the body from more polygons (ellipse
   approximation, segmented diamond, or curved spine) so a giant fish
