@@ -1260,7 +1260,7 @@ doing the actual implementation.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
 
-## 2026-05-09T14:59:03-04:00 — pass 1.5 play-scene drop-in substate
+## 2026-05-09T14:59:03-04:00 - pass 1.5 play-scene drop-in substate
 
 **File:** ui/scenes/play_scene.py
 **Lines (at time of edit):** class state constants + on_enter + update/render flow (modified)
