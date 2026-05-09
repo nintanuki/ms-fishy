@@ -128,7 +128,7 @@ class FishSettings:
 
     SPAWN_RATE = ScreenSettings.FPS // 5 # Frames between spawns
     MIN_SIZE = 8
-    MAX_SIZE = ScreenSettings.HEIGHT // 3
+    MAX_SIZE = ScreenSettings.HEIGHT // 2
     MIN_SPEED = 0.2
     MAX_SPEED = 2
 

@@ -36,6 +36,10 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 - [ ] Score counter: track fish eaten or total pixels consumed; display in the HUD.
 - [ ] High-score persistence: save the session's top score to a JSON file next to `main.py`.
 - [ ] Statistics in hud (# of fish eaten, total weight eaten, time elapsed, etc)
+- [ ] Game should end when player width exceeds screen width. Display message about having destroyed the ecosystem.
+- [ ] Add enemies that can't be eaten, such as jellyfish (pure obstacle) or a shark that chases you (maybe at higher levels)
+- [ ] Different levels and maps with obstacles such as coral, etc.
+- [ ] Controller needs to be able to pause too, currently can only pause with enter button
 
 ---
 
@@ -58,6 +62,10 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 - [ ] Replace fish polygon shapes with imported sprites once art is ready (multiple frames for swim cycle).
 - [ ] Scrolling ocean background or parallax layers.
 - [ ] Particle effect when the player eats a fish (splash, bubbles).
+- [ ] More polygons as fish get bigger? The diamond + triangle shape has it's charm and I like it, but when the player is half the screen it looks bad. Maybe the player could be a different shape such as an ellipse? Or get more polygons as they get bigger?
+- [ ] Kelp or seaweed in the background?
+- [ ] Underwater visual effect (waviness)?
+- [ ] Make a note in the documentation, as a rule this game will only use Pygame's tools for drawing to create images and visual effects. No imported visual assets or image files (audio and font assets are fine). I want to use this project to see how much I can do with Pygame alone.
 
 ---
 
