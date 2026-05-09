@@ -690,3 +690,40 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
 **Why:** Required-actions rule — docs must reflect the rebrand and the new
     visual element.
 **Editor:** GitHub Copilot (Claude Opus 4.7)
+
+## 2026-05-09 — Bow: halve gap, exclude from collision and screen boundary
+
+**File:** settings.py
+**Lines (at time of edit):** BOW_GAP_RATIO line in PlayerSettings (modified)
+**Before:**
+    BOW_GAP_RATIO = 0.15
+**After:**
+    BOW_GAP_RATIO = 0.075
+**Why:** User found the bow floated too high above the head; halving the ratio
+    cuts the visual distance to the body apex in half.
+
+**File:** core/sprites.py
+**Lines (at time of edit):** build_fish_surface return (modified); Player.__init__,
+    _build_mask (new), _set_facing_direction, grow, enforce_boundaries (modified);
+    Fish.__init__ unpack (modified).
+**Before:**
+    return image, body_height
+    ...
+    self.mask = pygame.mask.from_surface(self.image)   # bow pixels included
+    ...
+    if self.rect.top < 0:                              # bow constrained by screen
+        self.rect.top = 0
+**After:**
+    return image, body_height, bow_offset_y
+    ...
+    self.mask = self._build_mask()   # bow rows zeroed out in mask copy
+    ...
+    # Allow the bow to float above y=0; clamp on the body's top edge instead.
+    if self.rect.top + self.bow_offset_y < 0:
+        self.rect.top = -self.bow_offset_y
+**Why:** Bow contact must not trigger growth or game-over, and the bow should
+    not be constrained by the screen edge. build_fish_surface now returns
+    bow_offset_y as a third value so Player can zero those rows when building
+    the mask and use the offset to clamp only the body's top against y=0.
+    Fish unpacks with _ so the existing non-bow path is unaffected.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)

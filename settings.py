@@ -132,7 +132,7 @@ class PlayerSettings:
     BOW_HEIGHT_RATIO = 0.40
     # Vertical gap between the bow's bottom edge and the body's top apex,
     # as a fraction of fish size. Keeps the bow visually "floating" above.
-    BOW_GAP_RATIO = 0.15
+    BOW_GAP_RATIO = 0.075
     # Bow color in RGB 0-255 — hot pink to read clearly against the ocean.
     BOW_COLOR = (255, 105, 180)
 

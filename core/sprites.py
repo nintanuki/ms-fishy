@@ -29,7 +29,9 @@ def build_fish_surface(
         bow: Whether to draw the Ms. Fishy bow above the body apex.
 
     Returns:
-        tuple[pygame.Surface, int]: A rendered fish surface and its body height.
+        tuple[pygame.Surface, int, int]: A rendered fish surface, its body height,
+            and the vertical pixel offset of the body from the canvas top
+            (equals the bow height + gap when `bow=True`, otherwise 0).
     """
     body_height = max(1, int(size * FishSettings.BODY_HEIGHT_RATIO))
     tail_width = max(1, int(size * FishSettings.TAIL_WIDTH_RATIO))
@@ -135,7 +137,7 @@ def build_fish_surface(
         pygame.draw.polygon(image, PlayerSettings.BOW_COLOR, left_triangle)
         pygame.draw.polygon(image, PlayerSettings.BOW_COLOR, right_triangle)
 
-    return image, body_height
+    return image, body_height, bow_offset_y
 
 class Player(pygame.sprite.Sprite):
     """Player-controlled fish that can move, collide, and grow in size."""
@@ -153,7 +155,7 @@ class Player(pygame.sprite.Sprite):
         # on every grow() call (e.g. eating a size-8 fish gives 0.8 px growth; int
         # would round that to 0 each time, making growth invisible for small fish).
         self.size = float(PlayerSettings.SIZE[0])
-        self.base_image, _ = build_fish_surface(
+        self.base_image, _, self.bow_offset_y = build_fish_surface(
             int(self.size),
             PlayerSettings.COLOR_TOP,
             PlayerSettings.COLOR_BOTTOM,
@@ -163,7 +165,7 @@ class Player(pygame.sprite.Sprite):
         self.image = self.base_image
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = self._build_mask()
 
         # Float position accumulators store sub-pixel position so that
         # velocities below 1 px/frame accumulate across frames instead of
@@ -176,6 +178,21 @@ class Player(pygame.sprite.Sprite):
         # before committing the result to the sprite rect.
         self.velocity_x = 0.0
         self.velocity_y = 0.0
+
+    def _build_mask(self) -> pygame.mask.Mask:
+        """Build a collision mask that excludes the bow pixels above the body.
+
+        The bow is a purely visual accessory.  Zeroing its rows on a copy of
+        the surface before building the mask means bow-contact never registers
+        as a collision event — no growth, no game-over.
+        """
+        if self.bow_offset_y == 0:
+            return pygame.mask.from_surface(self.image)
+        # Clear the bow rows on a throwaway copy so they stay alpha-zero in
+        # the mask without touching the rendered image that's blitted to screen.
+        mask_surf = self.image.copy()
+        mask_surf.fill((0, 0, 0, 0), (0, 0, mask_surf.get_width(), self.bow_offset_y))
+        return pygame.mask.from_surface(mask_surf)
 
     def _set_facing_direction(self, direction: int, force: bool = False) -> None:
         """Apply sprite orientation so the fish faces travel direction.
@@ -195,7 +212,7 @@ class Player(pygame.sprite.Sprite):
             self.image = pygame.transform.flip(self.base_image, True, False)
 
         self.rect = self.image.get_rect(center=center)
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = self._build_mask()
 
     def input(self) -> None:
         """Accumulate directional input as acceleration on the velocity vector.
@@ -320,8 +337,9 @@ class Player(pygame.sprite.Sprite):
             self.rect.right = screen_width
             self.velocity_x = 0.0
             clamped = True
-        if self.rect.top < 0:
-            self.rect.top = 0
+        # Allow the bow to float above y=0; clamp on the body's top edge instead.
+        if self.rect.top + self.bow_offset_y < 0:
+            self.rect.top = -self.bow_offset_y
             self.velocity_y = 0.0
             clamped = True
         if self.rect.bottom > screen_height:
@@ -347,7 +365,7 @@ class Player(pygame.sprite.Sprite):
         """
         self.size = max(1.0, self.size + growth_amount)
         center = self.rect.center
-        self.base_image, _ = build_fish_surface(
+        self.base_image, _, self.bow_offset_y = build_fish_surface(
             int(self.size),
             PlayerSettings.COLOR_TOP,
             PlayerSettings.COLOR_BOTTOM,
@@ -383,7 +401,7 @@ class Fish(pygame.sprite.Sprite):
         self.speed = speed
         self.direction = 1 if side == "left" else -1
 
-        self.image, body_height = build_fish_surface(size, random.choice(ColorSettings.FISH_PALETTE))
+        self.image, body_height, _ = build_fish_surface(size, random.choice(ColorSettings.FISH_PALETTE))
 
         # Left-moving fish face left. Mirroring horizontally keeps the nose pointed
         # in the direction of travel and the tail fanning out behind it.
