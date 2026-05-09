@@ -47,8 +47,8 @@
 A `pygame.sprite.Sprite` representing the player fish.
 
 - **Appearance:** Yellow polygon fish (diamond body + triangle tail) with a small black square eye; initial size `PlayerSettings.SIZE`.
-- **Movement:** Arrow keys and left analog stick. Speed is `PlayerSettings.SPEED` px/frame.
-- **Boundary:** `enforce_boundaries` clamps the rect to the screen edges each frame.
+- **Movement:** Arrow keys and left analog stick. Uses a velocity model: each frame of held input adds `PlayerSettings.ACCELERATION` to the velocity on that axis (capped at `PlayerSettings.MAX_SPEED`). When input is released, `PlayerSettings.DRAG` is multiplied into the velocity each frame until it falls below `PlayerSettings.STOP_THRESHOLD`, giving an underwater coast-and-stop feel. Direction flip waits until velocity exceeds `PlayerSettings.FLIP_THRESHOLD` so the sprite doesn't flicker while drifting to a stop. Sub-pixel accumulators (`_pos_x`, `_pos_y`) prevent fractional velocities from being silently discarded by `int()` truncation each frame.
+- **Boundary:** `enforce_boundaries` clamps the rect to the screen edges, zeroes velocity on any clamped axis (so the player doesn't fight the wall), and resyncs the float accumulators to the clamped position.
 - **Growth:** `FishManager.grow_player` calls `Player.grow(...)`, which rebuilds the fish polygon/mask at a larger size while preserving center position. `self.size` is stored as `float` so fractional growth (from `PLAYER_GROWTH_COEFFICIENT = 0.10`) accumulates across multiple fish eaten; the surface is always built from `int(self.size)`. Storing it as `int` would silently discard sub-pixel growth on every call.
 
 ### `Fish`

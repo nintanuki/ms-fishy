@@ -68,6 +68,18 @@ class Player(pygame.sprite.Sprite):
         self.rect.topleft = (x, y)
         self.mask = pygame.mask.from_surface(self.image)
 
+        # Float position accumulators store sub-pixel position so that
+        # velocities below 1 px/frame accumulate across frames instead of
+        # being silently discarded by int() on every rect assignment.
+        self._pos_x = float(x)
+        self._pos_y = float(y)
+
+        # Velocity components in pixels per frame, maintained across frames.
+        # Separate from rect so acceleration and drag can be applied cleanly
+        # before committing the result to the sprite rect.
+        self.velocity_x = 0.0
+        self.velocity_y = 0.0
+
     def _set_facing_direction(self, direction: int, force: bool = False) -> None:
         """Apply sprite orientation so the fish faces travel direction.
 
@@ -89,51 +101,146 @@ class Player(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
 
     def input(self) -> None:
-        """Apply keyboard and controller movement input to the player position."""
-        move_x = 0
-        move_y = 0
+        """Accumulate directional input as acceleration on the velocity vector.
 
-        # Keyboard input for movement
+        Rather than moving the player a fixed amount each frame, held input
+        adds ACCELERATION to the matching velocity component (capped at
+        MAX_SPEED).  When input opposes the current velocity direction,
+        COUNTER_ACCELERATION is used instead — a larger value so the player
+        can actively brake and reverse faster than passive DRAG alone.  When
+        input is released, DRAG is applied each frame to produce a gradual
+        coast-to-stop that mimics water resistance.  The resulting velocity
+        is committed to a float position accumulator (_pos_x/_pos_y) and
+        then written to the sprite rect.
+        """
+        input_x = 0
+        input_y = 0
+
+        # Keyboard input — normalised to -1 / 0 / +1 so keyboard and
+        # controller produce identical acceleration magnitudes.
         keys = pygame.key.get_pressed()
         if keys[pygame.K_LEFT]:
-            move_x -= PlayerSettings.SPEED
+            input_x -= 1
         if keys[pygame.K_RIGHT]:
-            move_x += PlayerSettings.SPEED
+            input_x += 1
         if keys[pygame.K_UP]:
-            move_y -= PlayerSettings.SPEED
+            input_y -= 1
         if keys[pygame.K_DOWN]:
-            move_y += PlayerSettings.SPEED
+            input_y += 1
 
         # Controller input for movement
         for i in range(pygame.joystick.get_count()):
             joystick = pygame.joystick.Joystick(i)
             if joystick.get_axis(InputSettings.JOY_AXIS_LEFT_X) < -InputSettings.JOY_TRIGGER_THRESHOLD:
-                move_x -= PlayerSettings.SPEED
+                input_x -= 1
             if joystick.get_axis(InputSettings.JOY_AXIS_LEFT_X) > InputSettings.JOY_TRIGGER_THRESHOLD:
-                move_x += PlayerSettings.SPEED
+                input_x += 1
             if joystick.get_axis(InputSettings.JOY_AXIS_LEFT_Y) < -InputSettings.JOY_TRIGGER_THRESHOLD:
-                move_y -= PlayerSettings.SPEED
+                input_y -= 1
             if joystick.get_axis(InputSettings.JOY_AXIS_LEFT_Y) > InputSettings.JOY_TRIGGER_THRESHOLD:
-                move_y += PlayerSettings.SPEED
+                input_y += 1
 
-        self.rect.x += move_x
-        self.rect.y += move_y
+        # ------------------------------------------------------------------
+        # VELOCITY PHYSICS
+        # ------------------------------------------------------------------
+        # Horizontal axis: accelerate toward MAX_SPEED, or apply water drag.
+        if input_x != 0:
+            # When input opposes the current velocity (e.g. pressing right
+            # while moving left), use COUNTER_ACCELERATION — a higher value
+            # that lets the player actively brake and reverse faster than
+            # passive drag alone.  input_x * velocity_x < 0 detects this:
+            # the signs are opposite when the two are pointing in different
+            # directions.
+            accel = (
+                PlayerSettings.COUNTER_ACCELERATION
+                if input_x * self.velocity_x < 0
+                else PlayerSettings.ACCELERATION
+            )
+            self.velocity_x = max(
+                -PlayerSettings.MAX_SPEED,
+                min(PlayerSettings.MAX_SPEED,
+                    self.velocity_x + input_x * accel),
+            )
+        else:
+            # No input: multiply by DRAG (<1) each frame to simulate resistance.
+            self.velocity_x *= PlayerSettings.DRAG
+            # Once velocity is too small to notice, snap to zero to stop the
+            # asymptotic drift that DRAG's geometric decay would otherwise cause.
+            if abs(self.velocity_x) < PlayerSettings.STOP_THRESHOLD:
+                self.velocity_x = 0.0
 
-        if move_x < 0:
+        # Vertical axis: identical physics to horizontal.
+        if input_y != 0:
+            accel = (
+                PlayerSettings.COUNTER_ACCELERATION
+                if input_y * self.velocity_y < 0
+                else PlayerSettings.ACCELERATION
+            )
+            self.velocity_y = max(
+                -PlayerSettings.MAX_SPEED,
+                min(PlayerSettings.MAX_SPEED,
+                    self.velocity_y + input_y * accel),
+            )
+        else:
+            self.velocity_y *= PlayerSettings.DRAG
+            if abs(self.velocity_y) < PlayerSettings.STOP_THRESHOLD:
+                self.velocity_y = 0.0
+
+        # Apply velocity to the float position accumulator, then write the
+        # integer part to the sprite rect.  Using a float accumulator means
+        # velocities below 1 px/frame still accumulate and eventually move the
+        # fish, instead of being discarded by int() truncation every frame.
+        self._pos_x += self.velocity_x
+        self._pos_y += self.velocity_y
+        self.rect.x = int(self._pos_x)
+        self.rect.y = int(self._pos_y)
+
+        # Flip sprite direction based on velocity, not raw input, and only
+        # above FLIP_THRESHOLD so the fish doesn't flicker left/right while
+        # coasting to a stop after the player releases the key.
+        if self.velocity_x < -PlayerSettings.FLIP_THRESHOLD:
             self._set_facing_direction(-1)
-        elif move_x > 0:
+        elif self.velocity_x > PlayerSettings.FLIP_THRESHOLD:
             self._set_facing_direction(1)
 
     def enforce_boundaries(self, screen_width, screen_height) -> None:
-        """Clamp the player rect so it cannot leave the visible screen."""
+        """Clamp the player rect so it cannot leave the visible screen.
+
+        Also zeroes the velocity component on any axis that was clamped and
+        resyncs the float position accumulators.  Without zeroing velocity,
+        the fish would need to "fight" the wall to turn around (the velocity
+        model would keep trying to push it off-screen every frame).  Without
+        resyncing the accumulators, the clamped rect position and the float
+        position would diverge and cause a sudden snap when the player moves
+        away from the wall.
+        """
+        clamped = False
         if self.rect.left < 0:
             self.rect.left = 0
+            self.velocity_x = 0.0
+            clamped = True
         if self.rect.right > screen_width:
             self.rect.right = screen_width
+            self.velocity_x = 0.0
+            clamped = True
         if self.rect.top < 0:
             self.rect.top = 0
+            self.velocity_y = 0.0
+            clamped = True
         if self.rect.bottom > screen_height:
             self.rect.bottom = screen_height
+            self.velocity_y = 0.0
+            clamped = True
+
+        # Only resync the float accumulators when the rect was actually moved
+        # by a wall clamp.  Previously this ran unconditionally every frame,
+        # which wiped the sub-pixel fractional part before it could accumulate
+        # — causing right/down movement to never register at low velocities
+        # (positive fractional offsets from an integer base never cross the
+        # next integer boundary if the accumulator is reset each frame).
+        if clamped:
+            self._pos_x = float(self.rect.x)
+            self._pos_y = float(self.rect.y)
 
     def grow(self, growth_amount: float) -> None:
         """Increase player size and rebuild sprite/mask while preserving center.
@@ -146,6 +253,12 @@ class Player(pygame.sprite.Sprite):
         self.base_image, _ = build_fish_surface(int(self.size), PlayerSettings.COLOR)
         self.rect = self.base_image.get_rect(center=center)
         self._set_facing_direction(self.facing_direction, force=True)
+
+        # Resync float accumulators after the rect's topleft shifts due to the
+        # increased sprite size; without this the accumulators would lag behind
+        # and cause a position snap on the next input frame.
+        self._pos_x = float(self.rect.x)
+        self._pos_y = float(self.rect.y)
 
     def update(self) -> None:
         """Advance player state by one frame."""

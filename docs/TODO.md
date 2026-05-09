@@ -87,7 +87,7 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 
 ## Ideas
 
-- [ ] Add more realistic/challenging movement to mimic being underwater, there should be some initial inertia when first moving, and when the player lets go of the arrow key or analog stick the player should still keep moving a little before slowing down.
+- [x] Add more realistic/challenging movement to mimic being underwater, there should be some initial inertia when first moving, and when the player lets go of the arrow key or analog stick the player should still keep moving a little before slowing down.
 
 ---
 

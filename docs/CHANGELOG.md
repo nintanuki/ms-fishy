@@ -349,20 +349,88 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
 **Why:** Preserve runtime behavior while clearing static diagnostics.
 **Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
 
-## 2026-05-08T18:30:00-04:00 — Fix player growth being silently discarded
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+
+## 2026-05-09 — Underwater velocity-based player movement
+
+**File:** settings.py
+**Lines (at time of edit):** 75-82 (modified)
+**Before:**
+    class PlayerSettings:
+        """Player-specific settings like movement speed."""
+        SPEED = 2
+        SIZE = (16, 16)
+        COLOR = (255, 255, 0)
+        # % of the eaten fish's size is added to the player
+        PLAYER_GROWTH_COEFFICIENT = 0.05
+**After:** Removed `SPEED`; added `MAX_SPEED = 5.0`, `ACCELERATION = 0.5`, `DRAG = 0.88`,
+    `STOP_THRESHOLD = 0.05`, `FLIP_THRESHOLD = 0.1` with explanatory comments on units and behaviour.
+**Why:** Velocity-based movement requires separate physics tunables. `SPEED` was a fixed
+    per-frame offset; the new constants govern acceleration, water-resistance drag, and
+    anti-flicker thresholds independently.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
 
 **File:** core/sprites.py
-**Lines (at time of edit):** 57, 136-138 (modified)
-**Before:**
-    self.size = PlayerSettings.SIZE[0]  # int
-    ...
-    new_size = max(1, int(self.size + growth_amount))
-    self.size = new_size
-    self.base_image, _ = build_fish_surface(self.size, PlayerSettings.COLOR)
+**Lines (at time of edit):** 60-175 (modified)
+**Before:** `Player.__init__` stored no velocity; `input()` applied `PlayerSettings.SPEED`
+    directly to `rect.x/y` each frame; releasing a key caused instant stop;
+    direction flip read the raw `move_x` delta.
 **After:**
-    self.size = float(PlayerSettings.SIZE[0])
-    ...
-    self.size = max(1.0, self.size + growth_amount)
-    self.base_image, _ = build_fish_surface(int(self.size), PlayerSettings.COLOR)
-**Why:** `PLAYER_GROWTH_COEFFICIENT` is 0.10, so eating a small fish (size 8) yields `growth_amount = 0.8`. `int(16 + 0.8) = 16` — the size never changed. Storing `self.size` as float lets fractional growth accumulate across multiple fish until it crosses a whole pixel boundary.
-**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)
+    - `__init__` adds `self.velocity_x`, `self.velocity_y` (float, px/frame) and
+      `self._pos_x`, `self._pos_y` (float sub-pixel position accumulators).
+    - `input()` accelerates velocity by `ACCELERATION` when input is held (clamped to
+      `MAX_SPEED`), and multiplies by `DRAG` when released; snaps to zero below
+      `STOP_THRESHOLD`. Commits velocity via the float accumulators so sub-pixel
+      velocities accumulate instead of being discarded by `int()` truncation.
+      Direction flip uses velocity sign and only fires above `FLIP_THRESHOLD`.
+    - `enforce_boundaries()` zeroes velocity on any clamped axis and resyncs the
+      float accumulators so the fish doesn't fight the wall each frame.
+    - `grow()` resyncs the float accumulators after the rect topleft shifts from
+      the increased sprite size.
+**Why:** Gives the player underwater inertia — gradual acceleration and a natural
+    coast-to-stop on key release — without any visible position snap artefacts.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** ~50-51 (modified)
+**Before:** "Speed is `PlayerSettings.SPEED` px/frame." and one-line boundary note.
+**After:** Updated to describe the velocity model, DRAG/ACCELERATION/STOP_THRESHOLD/FLIP_THRESHOLD
+    roles, sub-pixel accumulators, and boundary velocity zeroing.
+**Why:** Architecture must reflect the current movement system.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+## 2026-05-09 — Fix right/down movement bug; add active counter-acceleration
+
+**File:** core/sprites.py
+**Lines (at time of edit):** ~215-225 (enforce_boundaries, modified)
+**Before:** `self._pos_x = float(self.rect.x)` / `self._pos_y = float(self.rect.y)` ran
+    unconditionally at the end of `enforce_boundaries` every frame.
+**After:** Accumulator resync is guarded by a `clamped` flag and only runs when a
+    wall actually moved the rect.
+**Why:** The unconditional reset destroyed the sub-pixel fractional part before it
+    could accumulate.  For negative-direction motion (left/up), Python's `int()`
+    truncation happens to move the rect by 1 px on the very first frame (e.g.
+    `int(99.97) = 99`), so those directions felt responsive.  For positive-direction
+    motion (right/down), the fractional part was wiped before ever crossing an
+    integer boundary, so the fish appeared not to respond at all.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** settings.py
+**Lines (at time of edit):** ~83 (added COUNTER_ACCELERATION)
+**After:** Added `COUNTER_ACCELERATION = 0.12` with explanatory comment.
+**Why:** Active braking needs a separate constant so players can override passive
+    drag; the value is higher than ACCELERATION so opposing input decelerates
+    faster than coasting does.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** core/sprites.py
+**Lines (at time of edit):** ~143-175 (input velocity physics, modified)
+**Before:** `input_x != 0` branch always used `ACCELERATION` regardless of whether
+    the input was in the same or opposite direction as current velocity.
+**After:** Detects `input_x * self.velocity_x < 0` (opposing signs) and uses
+    `COUNTER_ACCELERATION` in that case; same direction still uses `ACCELERATION`.
+    Applied identically to the vertical axis.
+**Why:** Without this, pressing the opposite direction felt nearly identical to
+    releasing the key — both just bled off momentum at roughly the same rate.
+    Counter-acceleration lets the player noticeably brake and reverse faster.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)

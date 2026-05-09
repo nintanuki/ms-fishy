@@ -66,11 +66,41 @@ class InputSettings:
     JOY_TRIGGER_THRESHOLD = 0.5
 
 class PlayerSettings:
-    """Player-specific settings like movement speed."""
-    SPEED = 2
+    """Player-specific settings for movement, underwater physics, and appearance."""
+
+    # Maximum speed the fish can reach on any single axis, in pixels per frame.
+    # Increasing this makes top-end feel faster; decreasing it keeps the fish
+    # feeling heavy and viscous in the water.
+    MAX_SPEED = 3.0
+
+    # Velocity added per frame (px/frame²) while a direction key is held.
+    # Lower values = longer ramp-up (sluggish); higher = near-instant response.
+    # At 60 FPS, 0.5 takes ~10 frames to reach MAX_SPEED from a standstill.
+    ACCELERATION = 0.03
+
+    # Velocity added per frame (px/frame²) when input directly opposes the
+    # current travel direction (i.e. active braking / reversing).  Should be
+    # noticeably higher than ACCELERATION so the player can fight their own
+    # momentum and stop/reverse faster than passive drag alone would allow.
+    COUNTER_ACCELERATION = 0.12
+
+    # Fraction of velocity retained each frame when no input is given (0–1).
+    # Models water resistance: 1.0 = frictionless coast, 0.0 = instant stop.
+    # At 60 FPS, 0.88 brings a full-speed fish to near-zero in ~35 frames (~0.6 s).
+    DRAG = 0.95
+
+    # Velocity magnitude (px/frame) below which the fish snaps to a full stop.
+    # Prevents imperceptible infinite drift from DRAG's geometric decay.
+    STOP_THRESHOLD = 0.03
+
+    # Velocity magnitude (px/frame) the fish must exceed before the sprite is
+    # allowed to flip direction. Prevents the fish from flickering left/right
+    # while coasting to a stop after the player releases a key.
+    FLIP_THRESHOLD = 0.1
+
     SIZE = (16, 16)
     COLOR = (255, 255, 0)
-    # % of the eaten fish's size is added to the player
+    # Fraction of the eaten fish's size added to the player on each eat.
     PLAYER_GROWTH_COEFFICIENT = 0.05
 
 class FishSettings:
