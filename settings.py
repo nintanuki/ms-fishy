@@ -183,6 +183,8 @@ class AssetPaths:
 
     PAUSE_IN_SOUND = os.path.join(AUDIO_DIR, 'sound', 'sfx_sounds_pause2_in.ogg')
     PAUSE_OUT_SOUND = os.path.join(AUDIO_DIR, 'sound', 'sfx_sounds_pause2_out.ogg')
+    GULP_SOUND = os.path.join(AUDIO_DIR, 'sound', 'gulp.ogg')
+    SCREAM_SOUND = os.path.join(AUDIO_DIR, 'sound', 'wilhelm_scream.ogg')
 
 class DebugSettings:
     """Settings related to debugging features."""

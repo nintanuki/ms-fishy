@@ -243,9 +243,13 @@ class GameManager:
 
         self.all_sprites.update()
         self.enemy_sprites.update()
-        if self.fish_manager.update(self.player):
+        game_over, ate_count = self.fish_manager.update(self.player)
+        if ate_count > 0:
+            self.audio.play_gulp_sound()
+        if game_over:
             self.game_state = GameStateSettings.GAME_OVER
             self.audio.stop_music()
+            self.audio.play_game_over_scream_sound()
 
     def _render_frame(self) -> None:
         """Draw the current game state to the screen, then apply the CRT pass."""

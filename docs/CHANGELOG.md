@@ -556,3 +556,36 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
         self._handle_pause_action()
 **Why:** START should have full parity with Enter, including restart from game-over.
 **Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+## 2026-05-09 — Add gulp and Wilhelm scream sound effects; route pause sounds through fixed channels
+
+**File:** settings.py
+**Lines (at time of edit):** 186-187 (added)
+**Before:**
+    PAUSE_IN_SOUND = ...
+    PAUSE_OUT_SOUND = ...
+**After:**
+    PAUSE_IN_SOUND = ...
+    PAUSE_OUT_SOUND = ...
+    GULP_SOUND = os.path.join(AUDIO_DIR, 'sound', 'gulp.ogg')
+    SCREAM_SOUND = os.path.join(AUDIO_DIR, 'sound', 'wilhelm_scream.ogg')
+**Why:** New SFX asset paths must live in AssetPaths per architecture rules.
+
+**File:** systems/audio_manager.py
+**Lines (at time of edit):** 8-11, 26-34, 59-72, 162-177 (modified)
+**Before:** `CHANNEL_IDS` was commented out; pause sounds loaded with `_safe_load_sound` and played via `.play()` directly; no `_loud_sound` helper; no gulp/scream loading.
+**After:** `CHANNEL_IDS = {'gulp': 0, 'scream': 1, 'pause_in': 2, 'pause_out': 3}` active; all four sounds loaded via `_loud_sound`; channels dict built from `CHANNEL_IDS`; all four play functions route through `self.channels[name].play(sound)`.
+**Why:** Fixed channels prevent any sound from being cut off by a simultaneous effect. Routing pause sounds through the same architecture keeps all SFX consistent.
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** 14-29, 52-76 (modified)
+**Before:** `update` and `check_collisions` returned `bool` (game_over only).
+**After:** Both return `tuple[bool, int]` — `(game_over, ate_count)` — so the caller can trigger the gulp sound once per frame when any fish was eaten.
+**Why:** The caller needs to know whether an eat happened this frame to fire the sound without reaching into FishManager internals.
+
+**File:** main.py
+**Lines (at time of edit):** ~220-225 (_update_world, modified)
+**Before:** `if self.fish_manager.update(self.player): ...`
+**After:** `game_over, ate_count = ...; if ate_count > 0: audio.play_gulp_sound(); if game_over: audio.play_game_over_scream_sound()`
+**Why:** Wire the two new sounds at their natural trigger points in the game loop.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)

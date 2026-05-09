@@ -22,13 +22,14 @@ class FishManager:
             player: The player fish sprite used for collision checks.
 
         Returns:
-            bool: True when the player was eaten this frame.
+            tuple[bool, int]: (game_over, fish_eaten) — True when the player
+            was eaten this frame, and the count of fish the player ate.
         """
         self.spawn_timer += 1
         if self.spawn_timer >= FishSettings.SPAWN_RATE:
             self.spawn_fish()
             self.spawn_timer = 0
-        
+
         return self.check_collisions(player)
 
     def spawn_fish(self):
@@ -60,28 +61,31 @@ class FishManager:
             player: The player fish sprite.
 
         Returns:
-            bool: True if a larger or equal fish consumed the player.
+            tuple[bool, int]: (game_over, fish_eaten) — True if a larger or
+            equal fish consumed the player, and the count of fish the player ate.
         """
         # We use pygame.sprite.spritecollide with a custom callback or manual loop
         # We pass False for dokill because we want to decide which one gets removed (player or fish) based on their relative sizes.
         collided_fish = pygame.sprite.spritecollide(player, self.sprite_group, False, pygame.sprite.collide_mask)
-        
+
+        ate_count = 0
         # If there are multiple collisions in the same frame, we process them one at a time.
         for fish in collided_fish:
             # Compare areas to determine if the player eats the fish or vice versa.
             player_area = player.rect.width * player.rect.height
             fish_area = fish.size * fish.size
-            
+
             # If the player's area is larger than the fish's area, the player eats the fish.
             if player_area > fish_area:
                 # Player eats fish
                 fish.kill()
                 self.grow_player(player, fish)
+                ate_count += 1
             else:
                 # Fish eats player
-                return True
+                return True, ate_count
 
-        return False
+        return False, ate_count
 
     def grow_player(self, player, fish):
         """Increase player size after eating a fish.

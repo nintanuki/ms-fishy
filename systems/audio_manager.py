@@ -5,37 +5,34 @@ from settings import AudioSettings, AssetPaths
 class AudioManager:
     """Load, route, and play game music and sound effects across fixed channels."""
 
-    # CHANNEL_IDS = {
-    #     'movement': 0,
-    #     'boundary': 1,
-    #     'key': 2,
-    #     'scream': 3,
-    #     'dig': 4,
-    #     'monster_chase': 5,
-    #     'coin': 6,
-    #     'spray': 7,
-    #     'found_detector': 8,
-    #     'detector': 9,
-    #     'light': 10,
-    #     'vanish': 11,
-    #     'menu_move': 12,
-    #     'menu_select': 13,
-    # }
+    CHANNEL_IDS = {
+        'gulp': 0,
+        'scream': 1,
+        'pause_in': 2,
+        'pause_out': 3,
+    }
 
     def __init__(self):
         """
         Initialize the audio manager and load all necessary sound effects.
         Uses fixed channels for important sounds to prevent them from being cut off by other effects.
         """
-        # pygame.mixer.set_num_channels(len(self.CHANNEL_IDS))
+        pygame.mixer.set_num_channels(len(self.CHANNEL_IDS))
 
         # Track last played song to avoid back-to-back repeats.
         self._last_bgm_track = None
         self._music_mode = "normal"
         self._music_is_paused = False
 
-        self.pause_in_sound = self._safe_load_sound(AssetPaths.PAUSE_IN_SOUND)
-        self.pause_out_sound = self._safe_load_sound(AssetPaths.PAUSE_OUT_SOUND)
+        self.pause_in_sound = self._loud_sound(AssetPaths.PAUSE_IN_SOUND)
+        self.pause_out_sound = self._loud_sound(AssetPaths.PAUSE_OUT_SOUND)
+        self.gulp_sound = self._loud_sound(AssetPaths.GULP_SOUND)
+        self.scream_sound = self._loud_sound(AssetPaths.SCREAM_SOUND)
+
+        self.channels = {
+            name: pygame.mixer.Channel(channel_id)
+            for name, channel_id in self.CHANNEL_IDS.items()
+        }
 
         self.play_random_bgm()
 
@@ -58,10 +55,21 @@ class AudioManager:
         # self.menu_move_sound = self._load_sound(AssetPaths.MENU_MOVE_SOUND)
         # self.menu_select_sound = self._load_sound(AssetPaths.MENU_SELECT_SOUND)
 
-        # self.channels = {
-        #     name: pygame.mixer.Channel(channel_id)
-        #     for name, channel_id in self.CHANNEL_IDS.items()
-        # }
+
+
+    def _loud_sound(self, path: str) -> pygame.mixer.Sound | None:
+        """Load a sound at full volume, returning None if unavailable.
+
+        Args:
+            path: File path to the sound asset.
+
+        Returns:
+            pygame.mixer.Sound | None: Loaded sound object at volume 1.0, or None.
+        """
+        sound = self._safe_load_sound(path)
+        if sound is not None:
+            sound.set_volume(1.0)
+        return sound
 
     def _load_sound(self, path: str) -> pygame.mixer.Sound:
         """Load one sound effect from disk.
@@ -161,16 +169,28 @@ class AudioManager:
         self.play_random_bgm()
 
     def play_pause_in_sound(self) -> None:
-        """Play the pause-enter sound effect once."""
+        """Play the pause-enter sound effect once on its reserved channel."""
         if AudioSettings.MUTE or self.pause_in_sound is None:
             return
-        self.pause_in_sound.play()
+        self.channels['pause_in'].play(self.pause_in_sound)
 
     def play_pause_out_sound(self) -> None:
-        """Play the pause-exit sound effect once."""
+        """Play the pause-exit sound effect once on its reserved channel."""
         if AudioSettings.MUTE or self.pause_out_sound is None:
             return
-        self.pause_out_sound.play()
+        self.channels['pause_out'].play(self.pause_out_sound)
+
+    def play_gulp_sound(self) -> None:
+        """Play the fish-eating gulp sound effect once on its reserved channel."""
+        if AudioSettings.MUTE or self.gulp_sound is None:
+            return
+        self.channels['gulp'].play(self.gulp_sound)
+
+    def play_game_over_scream_sound(self) -> None:
+        """Play the game-over Wilhelm scream once on its reserved channel."""
+        if AudioSettings.MUTE or self.scream_sound is None:
+            return
+        self.channels['scream'].play(self.scream_sound)
 
     def toggle_mute(self, resume_music: bool = True) -> bool:
         """Toggle global mute and return the new mute state."""
