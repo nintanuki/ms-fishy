@@ -45,7 +45,7 @@ class UiSettings:
 
     GAME_OVER_TEXT = "GAME OVER"
     PAUSE_TEXT = "PAUSED"
-    OVERLAY_FONT_SIZE = 52
+    OVERLAY_FONT_SIZE = 52    # Primary overlay font size in points.
 
 
 class GameStateSettings:
@@ -100,7 +100,7 @@ class PlayerSettings:
 
     # Fraction of velocity retained each frame when no input is given (0–1).
     # Models water resistance: 1.0 = frictionless coast, 0.0 = instant stop.
-    # At 60 FPS, 0.88 brings a full-speed fish to near-zero in ~35 frames (~0.6 s).
+    # At 60 FPS, 0.95 brings a full-speed fish to near-zero in ~60 frames (~1 s).
     DRAG = 0.95
 
     # Velocity magnitude (px/frame) below which the fish snaps to a full stop.
@@ -112,7 +112,7 @@ class PlayerSettings:
     # while coasting to a stop after the player releases a key.
     FLIP_THRESHOLD = 0.1
 
-    SIZE = (16, 16)
+    SIZE = 16  # Initial conceptual fish body width in pixels. Height is derived from BODY_HEIGHT_RATIO.
     # Body gradient: bright yellow dorsal side fading to warm orange belly; units: RGB 0-255.
     COLOR_TOP = (255, 240, 60)         # bright yellow — dorsal (top of body)
     COLOR_BOTTOM = (255, 130, 0)       # warm orange — belly (bottom of body)
@@ -155,8 +155,6 @@ class FishSettings:
     TAIL_WIDTH_RATIO = 0.33
     # Fish eye side length as a fraction of fish size.
     EYE_SIZE_RATIO = 0.12
-    # Eye horizontal offset from the nose toward the tail-start, as fraction of size.
-    EYE_NOSE_OFFSET_RATIO = 0.25
     # Pixel offset for the drop shadow rendered behind every fish; adds perceived depth.
     SHADOW_OFFSET = 2
 
@@ -213,3 +211,4 @@ class AudioSettings:
 
 class DebugSettings:
     """Settings related to debugging features."""
+    pass

@@ -114,20 +114,7 @@ class GameManager:
             for index in range(pygame.joystick.get_count())
         ]
 
-    def reset_game(self):
-        """Restart the game by replacing the current GameManager with a fresh one.
-
-        This is safer than resetting each subsystem by hand because it reuses
-        the same startup path the game uses on first launch.
-        """
-        current_surface = pygame.display.get_surface()
-        was_fullscreen = bool(current_surface and (current_surface.get_flags() & pygame.FULLSCREEN))
-
-        new_game_manager = GameManager(start_fullscreen=was_fullscreen)
-        new_game_manager.run()
-        sys.exit()
-
-    def restart_session(self) -> None:
+    def reset_game(self) -> None:
         """Restart gameplay entities and return to the active playing state."""
         self._create_gameplay_entities()
         self.game_state = GameStateSettings.PLAYING
@@ -150,6 +137,11 @@ class GameManager:
     # INPUT HANDLING
     # -------------------------
 
+    def _toggle_fullscreen(self) -> None:
+        """Flip fullscreen mode and keep the CRT-skip flag in sync."""
+        pygame.display.toggle_fullscreen()
+        self.full_screen = not self.full_screen
+
     def _handle_keydown(self, event) -> None:
         """Route one keyboard press to the appropriate UI/gameplay handler."""
         # Esc is the keyboard quit; useful while developing without a controller.
@@ -159,11 +151,8 @@ class GameManager:
         if event.key == pygame.K_RETURN:
             self._handle_enter_key()
 
-        # F11 fullscreen toggle is global and intentionally falls through so
-        # other handlers still see the press.
         if event.key == pygame.K_F11:
-            pygame.display.toggle_fullscreen()
-            self.full_screen = not self.full_screen
+            self._toggle_fullscreen()
 
     def _handle_pause_action(self) -> None:
         """Toggle pause on or off, including the audio side-effects for each transition."""
@@ -185,12 +174,12 @@ class GameManager:
             return
 
         if self.game_state == GameStateSettings.GAME_OVER:
-            self.restart_session()
+            self.reset_game()
 
     def _handle_start_button(self) -> None:
         """Handle the controller START button: pause/resume, or restart after game-over."""
         if self.game_state == GameStateSettings.GAME_OVER:
-            self.restart_session()
+            self.reset_game()
             return
 
         self._handle_pause_action()
@@ -202,10 +191,8 @@ class GameManager:
         if self.quit_combo_pressed():
             self.close_game()
 
-        # BACK is the global fullscreen toggle and falls through.
         if event.button == InputSettings.JOY_BUTTON_BACK:
-            pygame.display.toggle_fullscreen()
-            self.full_screen = not self.full_screen
+            self._toggle_fullscreen()
 
         if event.button == InputSettings.JOY_BUTTON_START:
             self._handle_start_button()
@@ -241,7 +228,7 @@ class GameManager:
         if self.game_state != GameStateSettings.PLAYING:
             return
 
-        self.all_sprites.update()
+        self.all_sprites.update(joysticks=self.connected_joysticks)
         self.enemy_sprites.update()
         game_over, ate_count = self.fish_manager.update(self.player)
         if ate_count > 0:
@@ -269,14 +256,13 @@ class GameManager:
             self.crt.draw()
 
     def _draw_centered_overlay(self, title_text: str) -> None:
-        """Draw one centered overlay title for pause and game-over screens.
+        """Draw a single centered text line for pause and game-over screens.
 
         Args:
-            title_text: Main large text line.
+            title_text: Text to render centered on screen.
         """
         title_surface = self.overlay_font.render(title_text, True, ColorSettings.WHITE)
         title_rect = title_surface.get_rect(center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2))
-
         self.screen.blit(title_surface, title_rect)
 
     def run(self):

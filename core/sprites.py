@@ -10,7 +10,7 @@ def build_fish_surface(
     color: tuple[int, int, int],
     color2: tuple[int, int, int] | None = None,
     bow: bool = False,
-) -> tuple[pygame.Surface, int]:
+) -> tuple[pygame.Surface, int, int]:
     """Return a right-facing fish surface and the fish body height.
 
     A drop shadow is always rendered below-right. When `color2` is supplied the
@@ -154,7 +154,7 @@ class Player(pygame.sprite.Sprite):
         # accumulates across multiple fish eaten instead of being discarded by int()
         # on every grow() call (e.g. eating a size-8 fish gives 0.8 px growth; int
         # would round that to 0 each time, making growth invisible for small fish).
-        self.size = float(PlayerSettings.SIZE[0])
+        self.size = float(PlayerSettings.SIZE)
         self.base_image, _, self.bow_offset_y = build_fish_surface(
             int(self.size),
             PlayerSettings.COLOR_TOP,
@@ -163,15 +163,17 @@ class Player(pygame.sprite.Sprite):
         )
         self.facing_direction = 1
         self.image = self.base_image
-        self.rect = self.image.get_rect()
-        self.rect.topleft = (x, y)
+        # Use center positioning so callers can pass intuitive screen-center
+        # coordinates without having to compensate for the surface's bow padding
+        # or body width. grow() also re-anchors on center, so this matches.
+        self.rect = self.image.get_rect(center=(x, y))
         self.mask = self._build_mask()
 
         # Float position accumulators store sub-pixel position so that
         # velocities below 1 px/frame accumulate across frames instead of
         # being silently discarded by int() on every rect assignment.
-        self._pos_x = float(x)
-        self._pos_y = float(y)
+        self._pos_x = float(self.rect.x)
+        self._pos_y = float(self.rect.y)
 
         # Velocity components in pixels per frame, maintained across frames.
         # Separate from rect so acceleration and drag can be applied cleanly
@@ -214,7 +216,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=center)
         self.mask = self._build_mask()
 
-    def input(self) -> None:
+    def input(self, joysticks: list) -> None:
         """Accumulate directional input as acceleration on the velocity vector.
 
         Rather than moving the player a fixed amount each frame, held input
@@ -226,6 +228,9 @@ class Player(pygame.sprite.Sprite):
         coast-to-stop that mimics water resistance.  The resulting velocity
         is committed to a float position accumulator (_pos_x/_pos_y) and
         then written to the sprite rect.
+
+        Args:
+            joysticks: Cached list of connected joystick instances from GameManager.
         """
         input_x = 0
         input_y = 0
@@ -242,9 +247,9 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_DOWN]:
             input_y += 1
 
-        # Controller input for movement
-        for i in range(pygame.joystick.get_count()):
-            joystick = pygame.joystick.Joystick(i)
+        # Controller input for movement — uses the cached joystick list passed
+        # in from GameManager instead of re-querying pygame.joystick each frame.
+        for joystick in joysticks:
             if joystick.get_axis(InputSettings.JOY_AXIS_LEFT_X) < -InputSettings.JOY_TRIGGER_THRESHOLD:
                 input_x -= 1
             if joystick.get_axis(InputSettings.JOY_AXIS_LEFT_X) > InputSettings.JOY_TRIGGER_THRESHOLD:
@@ -380,9 +385,13 @@ class Player(pygame.sprite.Sprite):
         self._pos_x = float(self.rect.x)
         self._pos_y = float(self.rect.y)
 
-    def update(self) -> None:
-        """Advance player state by one frame."""
-        self.input()
+    def update(self, joysticks: list | None = None) -> None:
+        """Advance player state by one frame.
+
+        Args:
+            joysticks: Cached list of connected joystick instances from GameManager.
+        """
+        self.input(joysticks or [])
         self.enforce_boundaries(ScreenSettings.WIDTH, ScreenSettings.HEIGHT)
 
 class Fish(pygame.sprite.Sprite):

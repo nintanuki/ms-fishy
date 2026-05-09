@@ -10,7 +10,7 @@ python main.py
 
 1. Boot: window opens at 1280 × 720 (`ScreenSettings.RESOLUTION`), no console errors.
 2. Title bar shows `ScreenSettings.TITLE`.
-3. Background is `ColorSettings.BG_COLOR` (blue).
+3. Background is a vertical gradient from aqua (`ColorSettings.BG_COLOR_TOP`) at the top to deep navy (`ColorSettings.BG_COLOR_BOTTOM`) at the bottom.
 4. CRT overlay is visible (scanlines + slight flicker).
 
 ## Globals
@@ -23,13 +23,13 @@ python main.py
 
 ## Gameplay
 
-10. The player (yellow fish polygon with a black eye) is centered on screen at startup.
+10. The player (yellow-to-orange gradient fish with a black eye and a pink bow) is centered on screen at startup.
 11. Arrow keys move the player in all four directions.
 12. Player cannot leave the screen edges.
-13. Fish (red fish polygons with black eyes) appear from the left or right edge and scroll across the screen.
+13. Fish (varied retro-palette polygon shapes with black eyes and drop shadows) appear from the left or right edge and scroll across the screen.
 14. Fish that reach the opposite edge disappear without error.
 15. When the player overlaps a fish smaller than itself: the fish disappears and the player grows visibly.
-16. When the player overlaps a fish larger than itself: a black game-over screen appears with centered white `GAME OVER` + restart prompt text (no abrupt process exit).
+16. When the player overlaps a fish larger than itself: a black game-over screen appears with centered white `GAME OVER` text (no abrupt process exit, no additional prompt).
 17. Pressing `Enter` during gameplay pauses updates, pauses music, and shows a black pause screen with centered white pause text.
 18. Pressing `Enter` on pause resumes gameplay, resumes music, and hides the pause overlay.
 19. Pressing `Enter` on game-over restarts the session.

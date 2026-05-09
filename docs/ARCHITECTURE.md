@@ -78,14 +78,16 @@ A `pygame.sprite.Sprite` representing an enemy fish.
 
 Events are routed by type:
 
-- `KEYDOWN` → `_handle_keydown`. `Esc` quits; `F11` toggles fullscreen; `Enter` → `_handle_enter_key` (pause/resume/restart).
-- `JOYBUTTONDOWN` → `_handle_joybuttondown`. Quit-chord check; `BACK` toggles fullscreen; `START` → `_handle_start_button` (pause/resume only).
+- `KEYDOWN` → `_handle_keydown`. `Esc` quits; `F11` calls `_toggle_fullscreen`; `Enter` → `_handle_enter_key` (pause/resume/restart).
+- `JOYBUTTONDOWN` → `_handle_joybuttondown`. Quit-chord check; `BACK` calls `_toggle_fullscreen`; `START` → `_handle_start_button` (pause/resume only).
+
+Both fullscreen entry points share a single `_toggle_fullscreen()` helper so the `pygame.display.toggle_fullscreen()` call and the `self.full_screen` flag stay in sync from a single location.
 - `JOYHATMOTION` → `_handle_joyhatmotion` (stub).
 - `JOYAXISMOTION` → `_handle_joyaxismotion` (stub).
 
 Both `_handle_enter_key` and `_handle_start_button` delegate to `_handle_pause_action` for the shared pause/resume logic, and both handle restart from the game-over state independently.
 
-Player movement from the analog stick is polled directly in `Player.input()` each frame rather than being event-driven, so it is continuous.
+Player movement from the analog stick is polled directly in `Player.input()` each frame rather than being event-driven, so it is continuous. `GameManager._update_world` passes its cached `connected_joysticks` list to `all_sprites.update(joysticks=...)`, which forwards it to `Player.input()` — no per-frame `pygame.joystick.Joystick(i)` re-queries.
 
 The joystick list is cached once at startup via `setup_controllers()`. Hot-plug requires re-running that method or re-init.
 

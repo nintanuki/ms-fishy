@@ -71,12 +71,11 @@ class FishManager:
         ate_count = 0
         # If there are multiple collisions in the same frame, we process them one at a time.
         for fish in collided_fish:
-            # Compare areas to determine if the player eats the fish or vice versa.
-            player_area = player.rect.width * player.rect.height
-            fish_area = fish.size * fish.size
-
-            # If the player's area is larger than the fish's area, the player eats the fish.
-            if player_area > fish_area:
+            # Compare conceptual sizes directly — both player.size and fish.size are the
+            # same unit (body width in pixels), so this is an apples-to-apples comparison.
+            # Using player.rect area was wrong because the rect height includes the bow,
+            # inflating the player's apparent size relative to enemies.
+            if player.size > fish.size:
                 # Player eats fish
                 fish.kill()
                 self.grow_player(player, fish)

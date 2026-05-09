@@ -34,6 +34,222 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
   rest, instead of pasting the entire file.
 * New Entries should be BELOW this line, do not add new log entries to the top. These instructions must stay on top.
 
+## 2026-05-09 — roadmap rewrite + documentation-truth rule
+
+**File:** .github/copilot-instructions.md
+**Lines (at time of edit):** Architecture rules section (added)
+**After:**
+    Added a "Documentation truth rules" subsection: code is the source of
+    truth; the only legitimate doc-vs-code contradiction is an unfinished
+    `[ ]` item in TODO.md; never change code to match a stale doc claim.
+**Why:** Codifies the rule the user articulated — prevents future passes
+from "fixing" code to match outdated documentation (e.g. a TESTING smoke
+check that no longer reflects the actual game).
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 1 through Pass 7 (rewritten)
+**Before:** Pass 1-7 were short bullet outlines; included a Pass 3 with a
+difficulty ramp, fish size tiers / palette tiering, ecosystem-destroyed
+fail-state, and player-growth diminishing returns.
+**After:**
+    - Pass 1 expanded into spec-grade implementation notes for an LLM
+      implementer (Scene base class, SceneManager, TitleScene with
+      background fish, PlayScene with player drop-in animation,
+      GameOverScene as a real scene, utils/text.py helper, Pygame-primitive
+      visuals rule).
+    - Pass 2 expanded with a full Score model, HUD widget, Leaderboard
+      with strict initials-deduplication semantics, InitialsEntryScene
+      (keyboard-typing AND arrow/D-pad letter cycling), LeaderboardScene
+      that replaces the old GAME OVER screen.
+    - Pass 3 reframed from "difficulty curve" to a "Levels" placeholder
+      because the user wants difficulty to come from level design, not
+      stat scaling. Player growing huge is the intended reward.
+    - Removed: difficulty ramp, fish size tiers, ecosystem-destroyed end,
+      growth diminishing returns. Screen-wrap moved to ideas/parking lot.
+    - Renumbered downstream passes (Visuals → Pass 4, Audio polish → 5,
+      Settings → 6).
+**Why:** User clarified that a flat power curve is part of the appeal and
+that difficulty should be designed per-level, not interpolated globally.
+Pass 1+2 needed implementer-grade detail because a weaker LLM will be
+doing the actual implementation.
+
+**Editor:** GitHub Copilot (Claude Opus 4.7)
+
+---
+
+
+## 2026-05-09 — review pass: spawn-center fix, fullscreen-toggle DRY, doc refresh
+
+**File:** core/sprites.py
+**Lines (at time of edit):** Player.__init__ (anchor positioning)
+**Before:**
+    self.rect = self.image.get_rect()
+    self.rect.topleft = (x, y)
+    ...
+    self._pos_x = float(x)
+    self._pos_y = float(y)
+**After:**
+    self.rect = self.image.get_rect(center=(x, y))
+    ...
+    self._pos_x = float(self.rect.x)
+    self._pos_y = float(self.rect.y)
+**Why:** Caller (`GameManager._create_gameplay_entities`) passes screen-center coordinates and TESTING.md states the player should be centered at startup, but topleft anchoring offset the body by half its width/height plus the bow padding. `Player.grow` already re-anchors on center, so initial setup now matches.
+
+**File:** main.py
+**Lines (at time of edit):** new `_toggle_fullscreen`, `_handle_keydown`, `_handle_joybuttondown`
+**Before:**
+    # F11 fullscreen toggle is global and intentionally falls through so
+    # other handlers still see the press.
+    if event.key == pygame.K_F11:
+        pygame.display.toggle_fullscreen()
+        self.full_screen = not self.full_screen
+    ...
+    # BACK is the global fullscreen toggle and falls through.
+    if event.button == InputSettings.JOY_BUTTON_BACK:
+        pygame.display.toggle_fullscreen()
+        self.full_screen = not self.full_screen
+**After:**
+    def _toggle_fullscreen(self) -> None:
+        pygame.display.toggle_fullscreen()
+        self.full_screen = not self.full_screen
+    ...
+    if event.key == pygame.K_F11:
+        self._toggle_fullscreen()
+    ...
+    if event.button == InputSettings.JOY_BUTTON_BACK:
+        self._toggle_fullscreen()
+**Why:** Two identical two-line blocks were drifting risks for the `full_screen` flag. The "intentionally falls through" comments were also stale — neither handler has anything below the F11/BACK branch to fall through to.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** Section 5 (Input)
+**Why:** Documents the new `_toggle_fullscreen` helper and that both keyboard and controller paths share it.
+
+**Editor:** GitHub Copilot (Claude Opus 4.7)
+
+---
+
+
+## 2026-05-09 — code-health bug fixes: type annotation, collision logic, joystick caching, dead constants
+
+**File:** core/sprites.py
+**Lines (at time of edit):** build_fish_surface signature, Player.__init__, Player.input, Player.update
+**Before:**
+    ) -> tuple[pygame.Surface, int]:   # missing third return value
+    self.size = float(PlayerSettings.SIZE[0])  # SIZE was a tuple; only index 0 used
+    def input(self) -> None: ...  # re-queried pygame.joystick.Joystick(i) every frame
+    def update(self) -> None: self.input()
+**After:**
+    ) -> tuple[pygame.Surface, int, int]:   # all three return values documented
+    self.size = float(PlayerSettings.SIZE)   # SIZE is now a scalar int
+    def input(self, joysticks: list) -> None: ...  # uses caller-supplied cached list
+    def update(self, joysticks: list | None = None) -> None: self.input(joysticks or [])
+**Why:** Incorrect annotation would mislead callers. Repeated Joystick(i) construction each frame was the open TODO item. SIZE tuple was redundant — only the width was ever used.
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** check_collisions, collision size comparison
+**Before:**
+    player_area = player.rect.width * player.rect.height
+    fish_area = fish.size * fish.size
+    if player_area > fish_area:
+**After:**
+    if player.size > fish.size:
+**Why:** The rect height includes the bow pixels, inflating the player's apparent area relative to enemies. Both player.size and fish.size are the same unit (body width in px), so the comparison is now apples-to-apples.
+
+**File:** settings.py
+**Lines (at time of edit):** FishSettings, PlayerSettings, UiSettings, DebugSettings
+**Before:**
+    EYE_NOSE_OFFSET_RATIO = 0.25   # defined but never read anywhere in the codebase
+    SIZE = (16, 16)                 # tuple; only index [0] used
+    DRAG = 0.95  # comment said "0.88 brings fish to zero in ~35 frames" — stale
+    class DebugSettings:  # body was empty — no pass
+        """..."""
+**After:**
+    EYE_NOSE_OFFSET_RATIO removed
+    SIZE = 16
+    DRAG = 0.95  # comment corrected: "0.95 brings fish to zero in ~60 frames"
+    class DebugSettings:
+        """..."""
+        pass
+**Why:** Dead constants and stale comments. DebugSettings without a body is a syntax edge-case that some linters flag.
+
+**File:** main.py
+**Lines (at time of edit):** _update_world
+**Before:**
+    self.all_sprites.update()
+**After:**
+    self.all_sprites.update(joysticks=self.connected_joysticks)
+**Why:** Passes the cached joystick list so Player.input() no longer re-queries pygame.joystick.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** items 3, 10, 13
+**Before:**
+    "Background is `ColorSettings.BG_COLOR` (blue)."
+    "The player (yellow fish polygon with a black eye)..."
+    "Fish (red fish polygons with black eyes)..."
+**After:**
+    Descriptions updated to match the current visual: ocean gradient background,
+    yellow-to-orange gradient player with pink bow, retro-palette enemies with shadows.
+**Why:** Smoke-check descriptions were stale after the retro visual pass.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** Section 5, Input
+**Before:**
+    "Player movement from the analog stick is polled directly in Player.input() each frame..."
+**After:**
+    Added that GameManager passes connected_joysticks to all_sprites.update(joysticks=...) so
+    Player.input() no longer re-queries pygame.joystick internally.
+**Why:** Architecture doc must reflect the joystick-caching fix.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+---
+
+## 2026-05-09 — bug fixes, function consolidation, guardrail rules
+
+**File:** main.py
+**Lines (at time of edit):** ~118-128 (reset_game consolidated), ~183 (enter key), ~190 (start button), ~248 (game-over render), ~255-262 (_draw_centered_overlay)
+**Before:**
+    reset_game() raised NotImplementedError; restart_session() held the real logic.
+    _handle_enter_key / _handle_start_button called self.restart_session().
+    game-over render: self._draw_centered_overlay(GAME_OVER_TEXT, RESTART_PROMPT_TEXT)
+    _draw_centered_overlay accepted an optional subtitle_text and loaded subtitle_font.
+**After:**
+    reset_game() now holds the real restart logic (dead stub and restart_session removed).
+    Call sites updated to self.reset_game().
+    game-over render: self._draw_centered_overlay(GAME_OVER_TEXT) — no prompt.
+    _draw_centered_overlay simplified back to a single centered line.
+    subtitle_font removed from _load_fonts.
+**Why:** restart_session was created by a previous AI session instead of updating the existing reset_game function — violating the project rule about not renaming things without cause. Restart prompt was added by a previous AI session without being asked for.
+
+**File:** settings.py
+**Lines (at time of edit):** UiSettings class (modified)
+**Before:**
+    RESTART_PROMPT_TEXT = "PRESS ENTER TO RESTART"
+    SUBTITLE_FONT_SIZE = 20
+**After:**
+    (both removed)
+**Why:** Only existed to support the unwanted restart prompt.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** item 16 (modified)
+**Before:**
+    "...`GAME OVER` + restart prompt text..."
+**After:**
+    "...`GAME OVER` text (no abrupt process exit, no additional prompt)."
+**Why:** Documentation was stale; reflected the removed restart prompt.
+
+**File:** .github/copilot-instructions.md
+**Lines (at time of edit):** Code style section and UI text section (modified)
+**Before:**
+    No rule about checking for existing functions before creating new ones.
+    No rule about not adding unrequested UI elements.
+**After:**
+    Added: "Before creating a new function, search the file for an existing function with a similar purpose..."
+    Added: "Do not add, remove, or modify any in-game UI element, text string, or screen layout unless the user explicitly asks for it."
+**Why:** Two guardrail rules added to prevent recurrence of the restart_session renaming and unwanted restart prompt patterns.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+---
+
 ## 2026-05-09 — retro visual pass: gradient background, fish shadow, player gradient, retro palette
 
 **File:** settings.py
