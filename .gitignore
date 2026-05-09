@@ -219,3 +219,6 @@ __marimo__/
 
 # High score leaderboard file
 leaderboard.json
+
+# folder created from pybag
+build/
