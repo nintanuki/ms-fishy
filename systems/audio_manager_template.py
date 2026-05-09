@@ -1,3 +1,63 @@
+"""Portable AudioManager template.
+
+DROP-IN GUIDE
+=============
+1. Copy this file to ``systems/audio_manager.py`` in your new game.
+2. Add an ``AudioSettings`` class to your ``settings.py`` matching the
+   contract below. The manager only depends on these names:
+
+       class AudioSettings:
+           MUTE = False              # global kill switch (SFX + music)
+           MUTE_MUSIC = False        # silence music while keeping SFX
+           MUSIC_VOLUME = 1.0        # 0.0 - 1.0
+           SFX_VOLUME = 1.0          # 0.0 - 1.0
+
+           # Logical name -> filesystem path. Keys are what gameplay code
+           # passes to ``AudioManager.play(name)``.
+           SOUND_EFFECTS = {
+               "jump":  "assets/audio/sound/jump.ogg",
+               "hurt":  "assets/audio/sound/hurt.ogg",
+           }
+
+           # Background tracks; one is chosen at random each time music
+           # starts, avoiding back-to-back repeats.
+           MUSIC_TRACKS = [
+               "assets/audio/music/level1.ogg",
+           ]
+
+3. Initialise the pygame mixer once at startup (typically in your
+   GameManager.__init__) **before** constructing AudioManager:
+
+       pygame.mixer.init()
+       self.audio = AudioManager()
+
+4. Trigger sounds from anywhere with one entry point:
+
+       self.audio.play("jump")
+
+5. Manage music with: ``play_random_music``, ``pause_music``,
+   ``resume_music``, ``stop_music``, ``toggle_mute``.
+
+DESIGN NOTES
+============
+- **Data-driven.** Adding a new sound is one line in settings; this file
+  never changes per-project.
+- **No reserved channels.** Pygame's default 8-channel pool is sufficient
+  for casual SFX. If a specific cue MUST never be cut off, fetch a
+  dedicated channel for it explicitly:
+
+      pygame.mixer.set_num_channels(N+1)
+      self._boss_channel = pygame.mixer.Channel(N)
+      ...
+      self._boss_channel.play(self.sounds["boss_death"])
+
+  Add that opt-in only for sounds that genuinely need it.
+- **Failure is non-fatal.** Missing files or an uninitialised mixer log
+  a warning and silently skip; the game keeps running.
+- **Mute is honored at the call site**, not by mutating each Sound's
+  volume, so toggling mute is instant and reversible.
+"""
+
 import pygame
 import random
 
@@ -7,10 +67,8 @@ from settings import AudioSettings
 class AudioManager:
     """Data-driven music and sound-effect playback.
 
-    All sounds are declared in ``AudioSettings.SOUND_EFFECTS`` (logical name ->
-    file path). Gameplay code triggers them through a single entry point,
-    ``play(name)``. Adding a new sound is one line in settings; no changes to
-    this class are required.
+    All sounds are declared in ``AudioSettings.SOUND_EFFECTS`` (logical name
+    -> file path). Gameplay code triggers them through ``play(name)``.
     """
 
     # ------------------------------------------------------------------
@@ -33,14 +91,7 @@ class AudioManager:
         self.play_random_music()
 
     def _load_sound(self, path: str) -> pygame.mixer.Sound | None:
-        """Load one sound from disk; return None if the asset or mixer is missing.
-
-        Args:
-            path: File path to the sound asset.
-
-        Returns:
-            pygame.mixer.Sound | None: Loaded sound, or None on failure.
-        """
+        """Load one sound from disk; return None if the asset or mixer is missing."""
         try:
             return pygame.mixer.Sound(path)
         except (pygame.error, FileNotFoundError) as error:
@@ -53,9 +104,6 @@ class AudioManager:
 
     def play(self, name: str) -> None:
         """Play one registered sound effect by logical name.
-
-        Pygame auto-allocates a free channel from its default pool, so casual
-        SFX never need bespoke channel bookkeeping.
 
         Args:
             name: Key from ``AudioSettings.SOUND_EFFECTS``.

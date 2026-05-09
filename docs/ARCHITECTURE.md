@@ -139,9 +139,44 @@ docs/                           ARCHITECTURE, TODO, TESTING, CHANGELOG.
 - Active states: `playing`, `paused`, `game_over`.
 - Not yet implemented: title screen and a full scene object architecture.
 
-## 10. Extension points
+## 10. Audio (`systems/audio_manager.py`)
+
+`AudioManager` is **data-driven**: every sound effect is declared in
+`AudioSettings.SOUND_EFFECTS` (logical name → file path), and every gameplay
+call site triggers one through a single entry point:
+
+```python
+self.audio.play("gulp")
+self.audio.play("pause_in")
+self.audio.play("scream")
+```
+
+Adding a new sound is one line in `settings.py`; the manager never changes.
+
+**Why this shape:**
+
+- **DRY.** No bespoke `play_X_sound` wrappers. One `play(name)` method covers every cue.
+- **No middlemen.** Earlier drafts mapped each sound to a reserved
+  `pygame.mixer.Channel`. For casual SFX that's overkill — pygame's default
+  8-channel pool, used implicitly via `Sound.play()`, is sufficient and never
+  drops audible cues in practice. If a future sound *must* never be cut off,
+  the template documents a one-line opt-in for a dedicated channel.
+- **Portable.** The class has zero game-specific identifiers; only the
+  `AudioSettings` registry differs per project.
+
+**Music API:** `play_random_music`, `pause_music`, `resume_music`,
+`stop_music`, `toggle_mute`. `play_random_music` avoids back-to-back repeats
+of the same track.
+
+**Failure mode:** a missing asset or uninitialised mixer logs a warning and is
+skipped; the game keeps running silently rather than crashing.
+
+**Template:** `systems/audio_manager_template.py` is a self-documenting copy
+intended to be lifted into other pygame projects. The header docstring
+describes the `AudioSettings` contract the manager expects.
+
+## 11. Extension points
 
 - **Scene/state machine:** evolve string-state handling into dedicated scene classes and add the missing title scene.
 - **Score / HUD:** add a score counter to `GameManager` or a dedicated HUD class in `ui/`; draw it in `_render_frame` before the CRT pass.
 - **Sprite art:** replace the `pygame.Surface` placeholders in `Player.__init__` and `Fish.__init__` with loaded images.
-- **Audio:** initialize `pygame.mixer` in `GameManager.__init__` and call sound effects from `FishManager.grow_player` and the death branch.

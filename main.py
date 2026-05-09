@@ -170,12 +170,12 @@ class GameManager:
         if self.game_state == GameStateSettings.PLAYING:
             self.game_state = GameStateSettings.PAUSED
             self.audio.pause_music()
-            self.audio.play_pause_in_sound()
+            self.audio.play("pause_in")
             return
 
         if self.game_state == GameStateSettings.PAUSED:
             self.game_state = GameStateSettings.PLAYING
-            self.audio.play_pause_out_sound()
+            self.audio.play("pause_out")
             self.audio.resume_music()
 
     def _handle_enter_key(self) -> None:
@@ -245,11 +245,11 @@ class GameManager:
         self.enemy_sprites.update()
         game_over, ate_count = self.fish_manager.update(self.player)
         if ate_count > 0:
-            self.audio.play_gulp_sound()
+            self.audio.play("gulp")
         if game_over:
             self.game_state = GameStateSettings.GAME_OVER
             self.audio.stop_music()
-            self.audio.play_game_over_scream_sound()
+            self.audio.play("scream")
 
     def _render_frame(self) -> None:
         """Draw the current game state to the screen, then apply the CRT pass."""

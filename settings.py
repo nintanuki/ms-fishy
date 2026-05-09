@@ -150,13 +150,6 @@ class FontSettings:
         os.path.dirname(__file__), 'assets', 'font', 'Pixeled.ttf'
     )
 
-class AudioSettings:
-    """Global audio toggles and mixer-level defaults."""
-
-    MUTE = False
-    MUTE_MUSIC = False  # Keep music disabled while retaining sound effects.
-    MUSIC_VOLUME = 1  # Background music volume in the range [0.0, 1.0].
-
 class AssetPaths:
     """Class to hold all the file paths for assets."""
     # __file__-relative so the project runs no matter the working directory
@@ -165,26 +158,41 @@ class AssetPaths:
     ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
     AUDIO_DIR = os.path.join(ASSETS_DIR, 'audio')
     MUSIC_DIR = os.path.join(AUDIO_DIR, 'music')
+    SOUND_DIR = os.path.join(AUDIO_DIR, 'sound')
 
     TV = os.path.join(
         ASSETS_DIR, 'graphics', 'effects', 'tv.png'
     )
 
-    # # Music
-    # BACKGROUND_MUSIC = os.path.join(
-    #     MUSIC_DIR, 'aquarium.mp3'
-    # )
 
-    # Music
-    NORMAL_MUSIC_TRACKS = [
-        os.path.join(MUSIC_DIR, '8bit-aquarium.mp3'),
+class AudioSettings:
+    """Global audio toggles, mixer-level defaults, and the sound/music registry.
+
+    To add a new sound effect: drop the file in assets/audio/sound/ and add a
+    line to SOUND_EFFECTS keyed by the logical name used at the call site
+    (e.g. ``self.audio.play("gulp")``). To add a new background track: append
+    its path to MUSIC_TRACKS.
+    """
+
+    MUTE = False
+    MUTE_MUSIC = False  # Keep music disabled while retaining sound effects.
+    MUSIC_VOLUME = 1.0  # Background music volume in the range [0.0, 1.0].
+    SFX_VOLUME = 1.0    # Default playback volume for all sound effects.
+
+    # Logical sound name -> file path. The key is what gameplay code passes
+    # to AudioManager.play(). Keep names short and game-action-oriented.
+    SOUND_EFFECTS = {
+        "pause_in":  os.path.join(AssetPaths.SOUND_DIR, 'sfx_sounds_pause2_in.ogg'),
+        "pause_out": os.path.join(AssetPaths.SOUND_DIR, 'sfx_sounds_pause2_out.ogg'),
+        "gulp":      os.path.join(AssetPaths.SOUND_DIR, 'gulp.ogg'),
+        "scream":    os.path.join(AssetPaths.SOUND_DIR, 'wilhelm_scream.ogg'),
+    }
+
+    # Background music pool; one is chosen at random each time music starts,
+    # avoiding back-to-back repeats of the same track.
+    MUSIC_TRACKS = [
+        os.path.join(AssetPaths.MUSIC_DIR, '8bit-aquarium.mp3'),
     ]
-    MUSIC_TRACKS = NORMAL_MUSIC_TRACKS
-
-    PAUSE_IN_SOUND = os.path.join(AUDIO_DIR, 'sound', 'sfx_sounds_pause2_in.ogg')
-    PAUSE_OUT_SOUND = os.path.join(AUDIO_DIR, 'sound', 'sfx_sounds_pause2_out.ogg')
-    GULP_SOUND = os.path.join(AUDIO_DIR, 'sound', 'gulp.ogg')
-    SCREAM_SOUND = os.path.join(AUDIO_DIR, 'sound', 'wilhelm_scream.ogg')
 
 class DebugSettings:
     """Settings related to debugging features."""
