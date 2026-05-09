@@ -47,11 +47,14 @@ class UiSettings:
     PAUSE_TEXT = "PAUSED"
     TITLE_TEXT = "MS. FISHY"
     START_PROMPT_TEXT = "PRESS START TO PLAY"
+    HIGH_SCORE_LABEL = "HI: "
     TITLE_FONT_SIZE = 96      # Title font size in points for the title scene.
     START_PROMPT_FONT_SIZE = 18  # Prompt font size in points for title scene CTA.
     TITLE_CENTER_Y_RATIO = 0.50  # Vertical title anchor as fraction of screen height.
     START_PROMPT_CENTER_Y_RATIO = 0.68  # Vertical prompt anchor as fraction of screen height.
     OVERLAY_FONT_SIZE = 52    # Primary overlay font size in points.
+    HUD_FONT_SIZE = 24        # HUD font size in points for fish count and score labels.
+    HUD_PADDING = 16          # Pixel inset from screen edges for HUD labels.
 
 
 class GameStateSettings:

@@ -7,9 +7,11 @@ import pygame
 from core.scene import Scene
 from core.score import Score
 from core.sprites import Player
+from ui.hud import Hud
 from systems.fish_manager import FishManager
 from settings import (
     ColorSettings,
+    FontSettings,
     InputSettings,
     PlayerSettings,
     ScreenSettings,
@@ -38,6 +40,12 @@ class PlayScene(Scene):
         self.bg_surface = build_gradient_surface(
             ScreenSettings.WIDTH, ScreenSettings.HEIGHT,
             ColorSettings.BG_COLOR_TOP, ColorSettings.BG_COLOR_BOTTOM,
+        )
+        self.hud_font = pygame.font.Font(FontSettings.FONT, UiSettings.HUD_FONT_SIZE)
+        self.hud = Hud(
+            score=self.score,
+            font=self.hud_font,
+            leaderboard=getattr(self.game, "leaderboard", None),
         )
         self._state = self.DROPPING_IN
         self._play_intro_splash = play_intro_splash
@@ -188,6 +196,8 @@ class PlayScene(Scene):
             screen.blit(self.bg_surface, (0, 0))
             self.all_sprites.draw(screen)
             self.enemy_sprites.draw(screen)
+            if self._state == self.ACTIVE:
+                self.hud.draw(screen)
         elif self._state == self.PAUSED:
             screen.fill(ColorSettings.BLACK)
             draw_centered_text(

@@ -74,7 +74,7 @@ Handles active gameplay and pausing. Owns the player, run `Score`, all sprites, 
   - On drop-in settle: start/resume gameplay music and switch to `ACTIVE`.
   - `ACTIVE`: advances sprites and fish manager; records fish sizes from collision results into `Score`; checks for game-over and transitions to `GameOverScene(score=...)` if needed.
   - `PAUSED`: no world updates.
-- **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. `PAUSED` draws black background + centered pause text.
+- **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. During `ACTIVE`, `Hud.draw(screen)` is called after world sprites so score labels sit on top of gameplay. `PAUSED` draws black background + centered pause text.
 
 #### `GameOverScene` (`ui/scenes/game_over_scene.py`)
 
@@ -91,6 +91,14 @@ Run-scoped model for points.
 - Tracks `fish_eaten` (count) and `size_eaten` (cumulative fish width in px).
 - `add(fish_size)` increments both counters.
 - `total` property returns `size_eaten`, which is the leaderboard-persisted value in Pass 2.
+
+### `Hud` (`ui/hud.py`)
+
+Lightweight gameplay overlay widget owned by `PlayScene`.
+
+- Inputs: run `Score`, HUD font, optional leaderboard service.
+- Layout: top-left fish count (`FISH: NN`), top-right run score (`SCORE: NNNNN`), top-center top score (`HI: NNNNN  XYZ` or `HI: -----`).
+- Draw order: rendered after world sprites and before the CRT pass.
 
 
 
@@ -160,7 +168,7 @@ Single source of truth for all tunables.
 | `InputSettings`  | Controller button/axis indices + quit combo + analog threshold.       |
 | `PlayerSettings` | Player movement speed and initial sprite size.                        |
 | `FishSettings`   | Fish spawn rate, size range, speed range, player growth amount.       |
-| `UiSettings`     | Overlay text and font sizes for pause/game-over screens.               |
+| `UiSettings`     | Overlay/HUD text labels, font sizes, and HUD padding.                 |
 | `GameStateSettings` | Canonical state names (`playing`, `paused`, `game_over`).           |
 | `FontSettings`   | Font file path.                                                       |
 | `AudioSettings`  | Mute toggles + music volume + per-sound volume toggles.              |
@@ -184,6 +192,7 @@ systems/
   fish_manager.py               Fish spawning, collision, and player growth.
   audio_manager.py              Data-driven sound and music system.
 ui/
+  hud.py                         Gameplay HUD widget (fish count, score, high score).
   scenes/
     __init__.py
     title_scene.py              Boot title scene with background fish.
@@ -248,7 +257,7 @@ describes the `AudioSettings` contract the manager expects.
 ## 11. Extension points
 
 - **More scenes:** add `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 2).
-- **Score / HUD:** add a score counter and HUD widget to `PlayScene`; draw it after sprites but before the CRT pass.
+- **Leaderboard integration:** wire `Leaderboard` ownership into `GameManager` and feed it to title, HUD, and game-over flow.
 - **Sprite art:** replace the `pygame.Surface` placeholders in `Player.__init__` and `Fish.__init__` with loaded images.
 
 ## 12. Project rules

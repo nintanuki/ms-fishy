@@ -358,6 +358,55 @@ doing the actual implementation.
 
 ## 2026-05-08 — Documentation and docstring pass
 
+## 2026-05-09T17:24:51-04:00 — Pass 2.2 HUD widget implementation
+
+**File:** ui/hud.py
+**Lines (at time of edit):** (new file)
+**After:**
+    Added `Hud` class with `draw(screen)` and top-line layout:
+    - left: `FISH: NN`
+    - center: `HI: NNNNN  XYZ` or `HI: -----`
+    - right: `SCORE: NNNNN`
+**Why:** Implements the next unchecked roadmap task (Pass 2.2) with a dedicated gameplay HUD widget.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** 10-18 (imports), 34-47 (HUD init), 187-191 (HUD render call)
+**Before:**
+    PlayScene rendered only background + sprites during active play.
+**After:**
+    PlayScene now creates a HUD font + `Hud` instance and calls
+    `self.hud.draw(screen)` only while in `ACTIVE` state.
+**Why:** Ensures the HUD appears during gameplay while remaining hidden during pause and non-play scenes.
+
+**File:** settings.py
+**Lines (at time of edit):** 52-60 (UiSettings constants)
+**Before:**
+    No dedicated HUD font or padding constants.
+**After:**
+    Added:
+    - `HIGH_SCORE_LABEL = "HI: "`
+    - `HUD_FONT_SIZE = 24`
+    - `HUD_PADDING = 16`
+**Why:** Keeps HUD text labels and spacing tunables centralized in settings and avoids magic numbers.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** PlayScene render notes, Score/Hud section, settings table, source tree, extension points
+**Before:**
+    HUD was listed as a future extension point and not described as a system.
+**After:**
+    Documented `Hud` ownership, layout, and draw order, and updated architecture references to match implementation.
+**Why:** Maintains architecture docs as source-of-truth after a system-level change.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 2.2 checkbox
+**Before:**
+    `- [ ] Create ui/hud.py ...`
+**After:**
+    `- [x] Create ui/hud.py ...`
+**Why:** Marks completion of the implemented roadmap item.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
 **File:** README.md
 **Lines (at time of edit):** 6 (modified)
 **Before:** `"Sprites are placeholder colored squares — no art yet. No score, no title screen, no game-over screen."`

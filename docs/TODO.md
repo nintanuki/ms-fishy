@@ -173,7 +173,7 @@ to show, and gives players a reason to keep playing.
 
 ### 2.2 HUD widget
 
-- [ ] Create [ui/hud.py](../ui/hud.py) with one class `Hud` that takes a `Score` and a font, and exposes a `draw(screen)` method.
+- [x] Create [ui/hud.py](../ui/hud.py) with one class `Hud` that takes a `Score` and a font, and exposes a `draw(screen)` method.
 - Layout:
   - Top-left: **"FISH: NN"** (zero-padded to 2 digits if you like; otherwise just integer).
   - Top-right: **"SCORE: NNNNN"** (zero-padded to 5 digits).
