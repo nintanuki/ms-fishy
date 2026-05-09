@@ -28,6 +28,7 @@ If a question is asked about *why* code was written a certain way, that is a req
 - Prefer clear names over short ones. New class and function names must clearly describe their purpose.
 - Do not change function or variable names unless the role has *completely* changed.
 - **Before creating a new function, search the file for an existing function with a similar purpose. Prefer updating or fixing the existing function over adding a new one with a different name.** If a new name is chosen, the old function must be deleted at the same time.
+- **No imported visual assets.** All sprites, backgrounds, particles, and visual effects must be drawn at runtime with `pygame.draw`, `pygame.Surface` operations, or per-pixel manipulation. Audio files and font files are allowed. The CRT overlay PNG (`assets/graphics/effects/tv.png`) is grandfathered as the only exception; do not add new image files.
 - No dead imports, unused variables, unused functions, or legacy code.
 
 ## Architecture rules

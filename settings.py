@@ -191,8 +191,15 @@ class AudioSettings:
 
     MUTE = False
     MUTE_MUSIC = False  # Keep music disabled while retaining sound effects.
-    MUSIC_VOLUME = 1.0  # Background music volume in the range [0.0, 1.0].
-    SFX_VOLUME = 1.0    # Default playback volume for all sound effects.
+    MUSIC_VOLUME = 1.0  # Base music volume in the range [0.0, 1.0].
+    SFX_VOLUME = 1.0    # Base playback volume for all sound effects.
+
+    # Volume toggles (0.0 = OFF, 1.0 = ON). These multiply base volumes.
+    MUSIC_VOLUME_TOGGLE = 1.0
+    SFX_VOLUME_PAUSE_IN = 0.5 # pause sounds are loud
+    SFX_VOLUME_PAUSE_OUT = 0.5
+    SFX_VOLUME_GULP = 1.0
+    SFX_VOLUME_SCREAM = 1.0
 
     # Logical sound name -> file path. The key is what gameplay code passes
     # to AudioManager.play(). Keep names short and game-action-oriented.
@@ -201,6 +208,14 @@ class AudioSettings:
         "pause_out": os.path.join(AssetPaths.SOUND_DIR, 'sfx_sounds_pause2_out.ogg'),
         "gulp":      os.path.join(AssetPaths.SOUND_DIR, 'gulp.ogg'),
         "scream":    os.path.join(AssetPaths.SOUND_DIR, 'game_over.ogg'),
+    }
+
+    # Per-sound toggle multipliers keyed by logical sound name.
+    SOUND_EFFECT_VOLUMES = {
+        "pause_in": SFX_VOLUME_PAUSE_IN,
+        "pause_out": SFX_VOLUME_PAUSE_OUT,
+        "gulp": SFX_VOLUME_GULP,
+        "scream": SFX_VOLUME_SCREAM,
     }
 
     # Background music pool; one is chosen at random each time music starts,

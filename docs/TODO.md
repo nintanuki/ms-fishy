@@ -59,7 +59,7 @@ follow them literally; do not invent extra behaviour.
 
 ### 1.1 Project rule: visuals are 100% Pygame primitives
 
-- [ ] Add this rule to [docs/ARCHITECTURE.md](ARCHITECTURE.md) (in §7 Settings or a new §12 Project rules) and to [.github/copilot-instructions.md](../.github/copilot-instructions.md) (under "Code style"):
+- [x] Add this rule to [docs/ARCHITECTURE.md](ARCHITECTURE.md) (in §7 Settings or a new §12 Project rules) and to [.github/copilot-instructions.md](../.github/copilot-instructions.md) (under "Code style"):
 
   > **No imported visual assets.** All sprites, backgrounds, particles, and
   > visual effects must be drawn at runtime with `pygame.draw`,
@@ -72,7 +72,7 @@ follow them literally; do not invent extra behaviour.
 
 ### 1.2 `utils/text.py` — centered-text helper
 
-- [ ] Create [utils/text.py](../utils/text.py) with one function:
+- [x] Create [utils/text.py](../utils/text.py) with one function:
 
   ```python
   def draw_centered_text(

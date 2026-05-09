@@ -111,7 +111,7 @@ Single source of truth for all tunables.
 | `UiSettings`     | Overlay text and font sizes for pause/game-over screens.               |
 | `GameStateSettings` | Canonical state names (`playing`, `paused`, `game_over`).           |
 | `FontSettings`   | Font file path.                                                       |
-| `AudioSettings`  | Mute toggles + music volume.                                          |
+| `AudioSettings`  | Mute toggles + music volume + per-sound volume toggles.              |
 | `AssetPaths`     | `__file__`-relative paths for non-font assets.                        |
 | `DebugSettings`  | Debug-only toggles.                                                   |
 
@@ -170,6 +170,11 @@ Adding a new sound is one line in `settings.py`; the manager never changes.
 `stop_music`, `toggle_mute`. `play_random_music` avoids back-to-back repeats
 of the same track.
 
+**Volume toggles:** `AudioSettings` now exposes `MUSIC_VOLUME_TOGGLE` plus
+per-sound entries in `SOUND_EFFECT_VOLUMES` so music and individual cues can
+be silenced by setting their multipliers to `0.0` without changing playback
+call sites.
+
 **Failure mode:** a missing asset or uninitialised mixer logs a warning and is
 skipped; the game keeps running silently rather than crashing.
 
@@ -182,3 +187,12 @@ describes the `AudioSettings` contract the manager expects.
 - **Scene/state machine:** evolve string-state handling into dedicated scene classes and add the missing title scene.
 - **Score / HUD:** add a score counter to `GameManager` or a dedicated HUD class in `ui/`; draw it in `_render_frame` before the CRT pass.
 - **Sprite art:** replace the `pygame.Surface` placeholders in `Player.__init__` and `Fish.__init__` with loaded images.
+
+## 12. Project rules
+
+- **No imported visual assets.** All sprites, backgrounds, particles, and
+  visual effects must be drawn at runtime with `pygame.draw`,
+  `pygame.Surface` operations, or per-pixel manipulation. Audio files and
+  font files are allowed. The CRT overlay PNG
+  (`assets/graphics/effects/tv.png`) is grandfathered as the only exception;
+  do not add new image files.

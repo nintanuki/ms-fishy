@@ -418,6 +418,30 @@ doing the actual implementation.
 **Why:** First gameplay pass — player and enemy sprites for the eat-or-be-eaten mechanic.
 **Editor:** Bryan
 
+---
+
+## 2026-05-09T11:37:07-04:00 — pass 1.1 visual-asset rule documented
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** end of file (added new section `## 12. Project rules`)
+**Before:** No explicit project-level rule banning newly imported image assets.
+**After:** Added the rule that visuals must be runtime-drawn with pygame primitives/surface operations, with audio/fonts allowed and `assets/graphics/effects/tv.png` as the only grandfathered image exception.
+**Why:** Completes TODO Pass 1 item 1.1 and makes the rendering constraint explicit in architecture docs.
+
+**File:** .github/copilot-instructions.md
+**Lines (at time of edit):** Code style section (added one bullet)
+**Before:** Code style rules did not explicitly ban new imported visual assets.
+**After:** Added the same no-imported-visual-assets rule under Code style, including the CRT overlay exception.
+**Why:** Enforces the project rule at implementation-time for both human and AI editors.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 1, item 1.1 checklist line
+**Before:** `- [ ] Add this rule ...`
+**After:** `- [x] Add this rule ...`
+**Why:** Marks Pass 1 item 1.1 as completed after both required doc updates were made.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
 **File:** systems/fish_manager.py
 **Lines (at time of edit):** (new file)
 **After:** `FishManager` with `spawn_fish`, `check_collisions` (eat smaller fish → grow player; eaten by larger fish → exit), and `grow_player`.
@@ -429,6 +453,18 @@ doing the actual implementation.
 **After:** Added `PlayerSettings` (SPEED, SIZE) and `FishSettings` (SPAWN_RATE, MIN_SIZE, MAX_SIZE, MIN_SPEED, MAX_SPEED, PLAYER_GROWTH_RATE).
 **Why:** New gameplay systems need tunables; all magic numbers must live in settings.py.
 **Editor:** Bryan
+
+---
+
+## 2026-05-09T11:39:00-04:00 — testing docs-only exception added
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** 5-7 (added)
+**Before:** Checklist stated to run after non-trivial changes, with no explicit docs-only exception.
+**After:** Added a docs-only exception: when changes touch documentation files only (`README.md`, `docs/*.md`, `.github/copilot-instructions.md`) and do not modify runtime code, gameplay smoke checks are not required.
+**Why:** Aligns testing expectations with documentation-only edits to avoid unnecessary runtime checks.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
 
 **File:** main.py
 **Lines (at time of edit):** 1-170 (modified)
@@ -943,3 +979,97 @@ doing the actual implementation.
     the mask and use the offset to clamp only the body's top against y=0.
     Fish unpacks with _ so the existing non-bow path is unaffected.
 **Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+---
+
+## 2026-05-09T11:40:47-04:00 — add music and per-sfx volume toggles
+
+**File:** settings.py
+**Lines (at time of edit):** 201-238 (modified)
+**Before:**
+    MUSIC_VOLUME = 1.0
+    SFX_VOLUME = 1.0
+**After:**
+    MUSIC_VOLUME = 1.0
+    SFX_VOLUME = 1.0
+    MUSIC_VOLUME_TOGGLE = 1.0
+    SFX_VOLUME_PAUSE_IN = 1.0
+    SFX_VOLUME_PAUSE_OUT = 1.0
+    SFX_VOLUME_GULP = 1.0
+    SFX_VOLUME_SCREAM = 1.0
+    SOUND_EFFECT_VOLUMES = {
+        "pause_in": SFX_VOLUME_PAUSE_IN,
+        "pause_out": SFX_VOLUME_PAUSE_OUT,
+        "gulp": SFX_VOLUME_GULP,
+        "scream": SFX_VOLUME_SCREAM,
+    }
+**Why:** Adds explicit constants to toggle music and each registered sound effect by multiplier (`0.0` off, `1.0` on) without changing call sites.
+
+**File:** systems/audio_manager.py
+**Lines (at time of edit):** 23-126 (modified)
+**Before:**
+    sound.set_volume(AudioSettings.SFX_VOLUME)
+    ...
+    pygame.mixer.music.set_volume(AudioSettings.MUSIC_VOLUME)
+**After:**
+    sound.set_volume(self._get_sfx_volume(name))
+    ...
+    pygame.mixer.music.set_volume(self._get_music_volume())
+    ...
+    sound.set_volume(self._get_sfx_volume(name))
+**Why:** Applies the new settings constants at playback time so per-sfx and music toggles are actually enforced.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 154, 193-197 (modified)
+**Before:**
+    `AudioSettings` | Mute toggles + music volume.
+**After:**
+    `AudioSettings` | Mute toggles + music volume + per-sound volume toggles.
+    Added note describing `MUSIC_VOLUME_TOGGLE` and `SOUND_EFFECT_VOLUMES`.
+**Why:** Keeps architecture documentation aligned with the updated audio-settings contract.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T11:51:35-04:00 — extract centered text helper for overlays
+
+**File:** utils/text.py
+**Lines (at time of edit):** (new file)
+**After:**
+    def draw_centered_text(
+        surface: pygame.Surface,
+        text: str,
+        font: pygame.font.Font,
+        color: tuple[int, int, int],
+        center: tuple[int, int],
+    ) -> pygame.Rect:
+        """Render `text` with `font` and blit it centered at `center`.
+        Returns the blitted rect (useful for stacking lines)."""
+**Why:** Implements TODO 1.2 by introducing a reusable, importable centered-text helper with the required docstring and return type.
+
+**File:** main.py
+**Lines (at time of edit):** 10 (modified import), 259-271 (modified)
+**Before:**
+    title_surface = self.overlay_font.render(title_text, True, ColorSettings.WHITE)
+    title_rect = title_surface.get_rect(center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2))
+    self.screen.blit(title_surface, title_rect)
+**After:**
+    draw_centered_text(
+        surface=self.screen,
+        text=title_text,
+        font=self.overlay_font,
+        color=ColorSettings.WHITE,
+        center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2),
+    )
+**Why:** Refactors `GameManager._draw_centered_overlay` to call the new helper instead of duplicating render/get_rect/blit logic.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** 75 (modified)
+**Before:**
+    - [ ] Create [utils/text.py](../utils/text.py) with one function:
+**After:**
+    - [x] Create [utils/text.py](../utils/text.py) with one function:
+**Why:** Marks roadmap task 1.2 complete after implementing and wiring the helper.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)

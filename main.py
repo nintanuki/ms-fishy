@@ -7,6 +7,7 @@ from core.sprites import Player
 from systems.fish_manager import FishManager
 from systems.audio_manager import AudioManager
 from crt import CRT
+from utils.text import draw_centered_text
 from settings import (
     ColorSettings,
     FontSettings,
@@ -261,9 +262,13 @@ class GameManager:
         Args:
             title_text: Text to render centered on screen.
         """
-        title_surface = self.overlay_font.render(title_text, True, ColorSettings.WHITE)
-        title_rect = title_surface.get_rect(center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2))
-        self.screen.blit(title_surface, title_rect)
+        draw_centered_text(
+            surface=self.screen,
+            text=title_text,
+            font=self.overlay_font,
+            color=ColorSettings.WHITE,
+            center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2),
+        )
 
     def run(self):
         """Run the main game loop until the player quits."""

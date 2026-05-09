@@ -2,6 +2,10 @@
 
 Run after a non-trivial change.
 
+Docs-only exception: if a change touches documentation files only
+(`README.md`, `docs/*.md`, `.github/copilot-instructions.md`) and does not
+modify runtime code, gameplay smoke checks are not required.
+
 ```powershell
 python main.py
 ```
