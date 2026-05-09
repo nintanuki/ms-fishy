@@ -1259,3 +1259,37 @@ doing the actual implementation.
 **Why:** Marks the next roadmap task as completed.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+## 2026-05-09T14:59:03-04:00 — pass 1.5 play-scene drop-in substate
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** class state constants + on_enter + update/render flow (modified)
+**Before:** PlayScene used a two-state flow (PLAYING/PAUSED); fish spawning began immediately when entering play; player started centered with normal input active.
+**After:** Added local substates `DROPPING_IN`, `ACTIVE`, `PAUSED`. `on_enter` now places the player above the screen with initial downward velocity. `update` runs a one-time drop-in auto-motion pass that ignores movement input and delays fish-manager updates until the player settles, then transitions to `ACTIVE`. Pause behavior remains unchanged in `PAUSED`.
+**Why:** Completes TODO Pass 1.5 by adding the requested title-to-play drop-in animation and delaying fish spawn until after settle.
+
+**File:** settings.py
+**Lines (at time of edit):** PlayerSettings physics constants block (modified)
+**Before:** No dedicated drop-in velocity constant.
+**After:** Added `PlayerSettings.DROP_IN_VELOCITY = 2.0` with units and transition-specific comment.
+**Why:** Centralizes the drop-in tunable in settings (no magic numbers).
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** Scene descriptions (PlayScene bullets) + section 9 state-machine scope (modified)
+**Before:** Documented PlayScene as PLAYING/PAUSED only.
+**After:** Documented `DROPPING_IN/ACTIVE/PAUSED` behavior, including delayed fish spawning and drop-in update flow.
+**Why:** Keep architecture docs aligned with runtime behavior.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 1 item 1.5 checkbox (modified)
+**Before:** `- [ ] Create [ui/scenes/play_scene.py](../ui/scenes/play_scene.py).`
+**After:** `- [x] Create [ui/scenes/play_scene.py](../ui/scenes/play_scene.py).`
+**Why:** Marks Pass 1.5 complete after implementation.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** Gameplay checklist items 10-20 (modified)
+**Before:** Expected immediate centered player at gameplay start.
+**After:** Updated checks to validate title-to-play drop-in and delayed fish spawn before active control.
+**Why:** Documentation-truth update so smoke checks match current gameplay flow.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)

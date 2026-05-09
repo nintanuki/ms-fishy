@@ -66,10 +66,13 @@ Launch scene shown on boot.
 
 Handles active gameplay and pausing. Owns the player, all sprites, enemy sprites, and fish manager.
 
-- **On Enter:** Resume music, set local state to PLAYING.
-- **Handle Events:** Enter/START toggles pause (pause/resume SFX, music pause/resume); global input is not forwarded here.
-- **Update:** If PLAYING, advance sprites and fish manager; check for game-over and transition to GameOverScene if needed. If PAUSED, do nothing.
-- **Render:** If PLAYING, draw ocean gradient, sprites. If PAUSED, draw black background + centered pause text.
+- **On Enter:** Resume music, set local substate to `DROPPING_IN`, place the player above the screen, and seed downward velocity from `PlayerSettings.DROP_IN_VELOCITY`.
+- **Handle Events:** Enter/START toggles pause only when active (pause/resume SFX, music pause/resume); global input is not forwarded here.
+- **Update:**
+  - `DROPPING_IN`: advances one-time auto-pilot motion using the same acceleration/counter-acceleration/drag model as player movement, without reading input and without spawning fish.
+  - `ACTIVE`: advances sprites and fish manager; checks for game-over and transitions to GameOverScene if needed.
+  - `PAUSED`: no world updates.
+- **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. `PAUSED` draws black background + centered pause text.
 
 #### `GameOverScene` (`ui/scenes/game_over_scene.py`)
 
@@ -186,7 +189,7 @@ docs/                           ARCHITECTURE, TODO, TESTING, CHANGELOG.
 
 ## 9. Current state-machine scope
 
-- Active scenes: `TitleScene`, `PlayScene` (PLAYING/PAUSED substates), `GameOverScene`.
+- Active scenes: `TitleScene`, `PlayScene` (DROPPING_IN/ACTIVE/PAUSED substates), `GameOverScene`.
 - Not yet implemented: `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 2).
 
 ## 10. Audio (`systems/audio_manager.py`)

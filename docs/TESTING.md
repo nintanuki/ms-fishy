@@ -27,16 +27,17 @@ python main.py
 
 ## Gameplay
 
-10. The player (yellow-to-orange gradient fish with a black eye and a pink bow) is centered on screen at startup.
-11. Arrow keys move the player in all four directions.
-12. Player cannot leave the screen edges.
-13. Fish (varied retro-palette polygon shapes with black eyes and drop shadows) appear from the left or right edge and scroll across the screen.
-14. Fish that reach the opposite edge disappear without error.
-15. When the player overlaps a fish smaller than itself: the fish disappears and the player grows visibly.
-16. When the player overlaps a fish larger than itself: a black game-over screen appears with centered white `GAME OVER` text (no abrupt process exit, no additional prompt).
-17. Pressing `Enter` during gameplay pauses updates, pauses music, and shows a black pause screen with centered white pause text.
-18. Pressing `Enter` on pause resumes gameplay, resumes music, and hides the pause overlay.
-19. Pressing `Enter` on game-over restarts the session.
+10. Pressing `Enter` or `START` on the title scene starts gameplay with an empty ocean, then the player visibly drops in from above and settles near center.
+11. Fish (varied retro-palette polygon shapes with black eyes and drop shadows) do not spawn until the drop-in settles.
+12. Arrow keys move the player in all four directions after drop-in completes.
+13. Player cannot leave the screen edges.
+14. Fish appear from the left or right edge and scroll across the screen.
+15. Fish that reach the opposite edge disappear without error.
+16. When the player overlaps a fish smaller than itself: the fish disappears and the player grows visibly.
+17. When the player overlaps a fish larger than itself: a black game-over screen appears with centered white `GAME OVER` text (no abrupt process exit, no additional prompt).
+18. Pressing `Enter` during gameplay pauses updates, pauses music, and shows a black pause screen with centered white pause text.
+19. Pressing `Enter` on pause resumes gameplay, resumes music, and hides the pause overlay.
+20. Pressing `Enter` on game-over restarts the session.
 
 ## Sign-off
 

@@ -113,6 +113,10 @@ class PlayerSettings:
     # Prevents imperceptible infinite drift from DRAG's geometric decay.
     STOP_THRESHOLD = 0.03
 
+    # Initial downward velocity for the title-to-play drop-in transition,
+    # measured in pixels per frame.
+    DROP_IN_VELOCITY = 2.0
+
     # Velocity magnitude (px/frame) the fish must exceed before the sprite is
     # allowed to flip direction. Prevents the fish from flickering left/right
     # while coasting to a stop after the player releases a key.

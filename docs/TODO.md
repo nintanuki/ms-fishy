@@ -123,7 +123,7 @@ Replace the string-based `game_state` with first-class `Scene` objects.
 
 ### 1.5 `PlayScene` + player drop-in animation
 
-- [ ] Create [ui/scenes/play_scene.py](../ui/scenes/play_scene.py).
+- [x] Create [ui/scenes/play_scene.py](../ui/scenes/play_scene.py).
 - Owns: `player`, `all_sprites`, `enemy_sprites`, `fish_manager`, `bg_surface`, and a small substate enum `DROPPING_IN` / `ACTIVE` / `PAUSED`.
 - **Drop-in animation** (substate `DROPPING_IN`, runs once on `on_enter`):
   - Spawn the player above the screen at `(WIDTH // 2, -player.rect.height)`.
