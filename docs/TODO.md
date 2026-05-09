@@ -35,13 +35,14 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 - [x] Pause feature — `Enter` key freezes world, stops music, shows centered pause text on black; resume restores music. Play `sfx_sounds_pause2_in.ogg` on pause and `sfx_sounds_pause2_out.ogg` on unpause.
 - [ ] Score counter: track fish eaten or total pixels consumed; display in the HUD.
 - [ ] High-score persistence: save the session's top score to a JSON file next to `main.py`.
+- [ ] Statistics in hud (# of fish eaten, total weight eaten, time elapsed, etc)
 
 ---
 
 ## Feel and difficulty
 
 - [ ] Difficulty ramp: gradually decrease `FishSettings.SPAWN_RATE` and increase fish speed as the session goes on.
-- [ ] Fish variety: multiple size tiers with distinct colors so the player can read threat level at a glance.
+- [ ] Fish variety: multiple size tiers with distinct colors so the player can read threat level at a glance. Loop randomly through a list of set colors
 - [ ] Player growth cap or diminishing-returns curve so the endgame stays interesting.
 - [ ] Screen-wrapping option (player exits left edge → re-enters right edge) as an alternative to boundary clamping.
 
