@@ -1,22 +1,38 @@
 import pygame
 import random
 from core.sprites import Fish
-from settings import FishSettings, ColorSettings, PlayerSettings
+from settings import FishSettings, PlayerSettings
 
 class FishManager:
+    """Spawn fish, update fish lifecycle, and resolve player-vs-fish collisions."""
+
     def __init__(self, sprite_group):
+        """Store references and initialize spawn timing state.
+
+        Args:
+            sprite_group: Pygame sprite group that contains all enemy fish.
+        """
         self.sprite_group = sprite_group
         self.spawn_timer = 0
 
     def update(self, player):
+        """Advance fish systems by one frame.
+
+        Args:
+            player: The player fish sprite used for collision checks.
+
+        Returns:
+            bool: True when the player was eaten this frame.
+        """
         self.spawn_timer += 1
         if self.spawn_timer >= FishSettings.SPAWN_RATE:
             self.spawn_fish()
             self.spawn_timer = 0
         
-        self.check_collisions(player)
+        return self.check_collisions(player)
 
     def spawn_fish(self):
+        """Create one fish with skewed-small size distribution and inverse speed."""
         side = random.choice(["left", "right"])
 
         # random.random() gives 0.0 to 1.0. 
@@ -38,6 +54,14 @@ class FishManager:
         self.sprite_group.add(new_fish)
 
     def check_collisions(self, player):
+        """Resolve collisions and report whether the player was eaten.
+
+        Args:
+            player: The player fish sprite.
+
+        Returns:
+            bool: True if a larger or equal fish consumed the player.
+        """
         # We use pygame.sprite.spritecollide with a custom callback or manual loop
         # We pass False for dokill because we want to decide which one gets removed (player or fish) based on their relative sizes.
         collided_fish = pygame.sprite.spritecollide(player, self.sprite_group, False, pygame.sprite.collide_mask)
@@ -54,20 +78,17 @@ class FishManager:
                 fish.kill()
                 self.grow_player(player, fish)
             else:
-                # Fish eats player - Exit for now
-                pygame.quit()
-                import sys
-                sys.exit()
+                # Fish eats player
+                return True
+
+        return False
 
     def grow_player(self, player, fish):
+        """Increase player size after eating a fish.
+
+        Args:
+            player: The player fish sprite that should grow.
+            fish: The eaten fish used to derive growth amount.
+        """
         growth_amount = fish.size * PlayerSettings.PLAYER_GROWTH_COEFFICIENT
-        
-        new_size = int(player.rect.width + growth_amount)
-        
-        # Keep the player centered so they don't "jump" when growing
-        center = player.rect.center
-        player.image = pygame.Surface((new_size, new_size))
-        player.image.fill(ColorSettings.YELLOW)
-        player.rect = player.image.get_rect(center=center)
-        # Rebuild the mask to match the new surface size after growing.
-        player.mask = pygame.mask.from_surface(player.image)
+        player.grow(growth_amount)

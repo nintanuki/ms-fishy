@@ -226,3 +226,97 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
 **After:** Removed the per-frame call so background music is started by `AudioManager` initialization instead of being continuously reloaded.
 **Why:** Reloading and replaying music each frame effectively prevented audible playback even after the path issue was fixed.
 **Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+## 2026-05-08T18:04:00-04:00 — Add pause + game-over states and fish-shape polish
+
+**File:** settings.py
+**Lines (at time of edit):** 25-55, 84-111 (modified)
+**Before:** Screen title was still `"Pygame Template"`; no state/UI constants; no fish-eye constants; no pause SFX paths.
+**After:** Title is `"Fishy"`; added `UiSettings` and `GameStateSettings`; added `PlayerSettings.COLOR`; added fish eye constants (`EYE_SIZE_RATIO`, `EYE_NOSE_OFFSET_RATIO`); added pause SFX asset paths.
+**Why:** Centralize new pause/game-over and fish-eye behavior in `settings.py` and remove remaining template title.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 6-163 (modified)
+**Before:** Player was a yellow square; fish body geometry existed only in `Fish`; no eye drawing helper shared between sprites.
+**After:** Added `build_fish_surface(size, color)` helper that renders tail/body polygons plus a black square eye. `Player` now uses fish geometry and gains a `grow()` method that preserves center while rebuilding image/mask. `Fish` now uses the shared helper.
+**Why:** Implement player-shape task and fish-eye task consistently for both player and enemies.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** 6-89 (modified)
+**Before:** On losing collision, `check_collisions` called `pygame.quit()` + `sys.exit()` directly; growth rebuilt a yellow square image manually.
+**After:** `update()` / `check_collisions()` return a boolean game-over signal instead of exiting; growth now calls `player.grow(...)`.
+**Why:** Remove abrupt process exit and route outcome through `GameManager` state handling.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+**File:** systems/audio_manager.py
+**Lines (at time of edit):** 27-168 (modified)
+**Before:** No pause/unpause helpers and no pause SFX loading/playback methods.
+**After:** Added safe pause SFX loading, `pause_music()`, `resume_music()`, `play_pause_in_sound()`, and `play_pause_out_sound()`.
+**Why:** Support Enter-based pause transitions that stop/resume music and play explicit in/out sounds.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+**File:** main.py
+**Lines (at time of edit):** 8-235 (modified)
+**Before:** Single always-playing loop; collisions could terminate process through `FishManager`; no pause or game-over overlays; no Enter behavior.
+**After:** Added state machine (`playing`, `paused`, `game_over`), mixer init, overlay font loading, centered overlay text rendering, Enter-driven pause/resume/restart transitions, and world update gating by state.
+**Why:** Implement no-abrupt-exit game-over screen and pause workflow requested in TODO.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+**File:** docs/TODO.md, docs/ARCHITECTURE.md
+**Lines (at time of edit):** TODO visual/core task checkboxes + architecture flow sections (modified)
+**Before:** Four requested items were unchecked; architecture described immediate-exit loss and square player/fish visuals.
+**After:** Marked four implemented TODO tasks complete and updated architecture docs to reflect the current state-driven loop and fish visuals.
+**Why:** Documentation maintenance is required for meaningful system changes.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+## 2026-05-08T18:22:00-04:00 — Tune overlay text, eye position, and player facing direction
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 36-141 (modified)
+**Before:** Player sprite always rendered in the default right-facing orientation; eye position used a fixed nose-offset formula; growth rebuilt only one orientation.
+**After:** Added player facing state with `_set_facing_direction(...)`, orientation updates on horizontal movement, and orientation persistence across growth. Eye placement now uses the midpoint between diamond-body center and nose.
+**Why:** Fix visual direction feedback while moving left/right and nudge eyes slightly backward to better match requested placement.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+**File:** settings.py
+**Lines (at time of edit):** 29-35 (modified)
+**Before:** Overlay config included prompt text and separate large/small font sizes.
+**After:** Simplified overlay config to single-line text only and one smaller `OVERLAY_FONT_SIZE`.
+**Why:** Pause and game-over screens now display only one centered word each.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+**File:** main.py
+**Lines (at time of edit):** 60-230 (modified)
+**Before:** Pause/game-over overlays rendered a title plus a secondary prompt with vertical offsets.
+**After:** Overlays render a single centered title (`PAUSED` or `GAME OVER`) with one shared, slightly smaller font and exact horizontal/vertical centering.
+**Why:** Match the simplified overlay UX request and ensure true center alignment.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+## 2026-05-08T18:24:00-04:00 — Silence pygame Group typing mismatch in entity setup
+
+**File:** main.py
+**Lines (at time of edit):** 66-67 (modified)
+**Before:** `self.all_sprites = pygame.sprite.Group(self.player)` triggered a strict type-checker mismatch with pygame stubs.
+**After:** Create empty group then add player: `self.all_sprites = pygame.sprite.Group(); self.all_sprites.add(self.player)`.
+**Why:** Preserve runtime behavior while clearing static diagnostics.
+**Editor:** Bryan (GitHub Copilot — GPT-5.3-Codex)
+
+## 2026-05-08T18:30:00-04:00 — Fix player growth being silently discarded
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 57, 136-138 (modified)
+**Before:**
+    self.size = PlayerSettings.SIZE[0]  # int
+    ...
+    new_size = max(1, int(self.size + growth_amount))
+    self.size = new_size
+    self.base_image, _ = build_fish_surface(self.size, PlayerSettings.COLOR)
+**After:**
+    self.size = float(PlayerSettings.SIZE[0])
+    ...
+    self.size = max(1.0, self.size + growth_amount)
+    self.base_image, _ = build_fish_surface(int(self.size), PlayerSettings.COLOR)
+**Why:** `PLAYER_GROWTH_COEFFICIENT` is 0.10, so eating a small fish (size 8) yields `growth_amount = 0.8`. `int(16 + 0.8) = 16` — the size never changed. Storing `self.size` as float lets fractional growth accumulate across multiple fish until it crosses a whole pixel boundary.
+**Editor:** Bryan (GitHub Copilot — Claude Sonnet 4.6)

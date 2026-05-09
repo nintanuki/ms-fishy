@@ -32,6 +32,10 @@ class AudioManager:
         # Track last played song to avoid back-to-back repeats.
         self._last_bgm_track = None
         self._music_mode = "normal"
+        self._music_is_paused = False
+
+        self.pause_in_sound = self._safe_load_sound(AssetPaths.PAUSE_IN_SOUND)
+        self.pause_out_sound = self._safe_load_sound(AssetPaths.PAUSE_OUT_SOUND)
 
         self.play_random_bgm()
 
@@ -69,6 +73,20 @@ class AudioManager:
             pygame.mixer.Sound: Loaded sound object.
         """
         return pygame.mixer.Sound(path)
+
+    def _safe_load_sound(self, path: str) -> pygame.mixer.Sound | None:
+        """Load a sound effect and return None if mixer/assets are unavailable.
+
+        Args:
+            path: File path to the sound asset.
+
+        Returns:
+            pygame.mixer.Sound | None: Loaded sound object or None.
+        """
+        try:
+            return self._load_sound(path)
+        except (pygame.error, FileNotFoundError):
+            return None
 
     def play_random_bgm(self):
         """Selects a random track (avoiding the last played) and starts looping it."""
@@ -123,6 +141,36 @@ class AudioManager:
     def stop_music(self) -> None:
         """Stop the currently playing background track."""
         pygame.mixer.music.stop()
+        self._music_is_paused = False
+
+    def pause_music(self) -> None:
+        """Pause background music playback if currently active."""
+        if AudioSettings.MUTE or AudioSettings.MUTE_MUSIC:
+            return
+        pygame.mixer.music.pause()
+        self._music_is_paused = True
+
+    def resume_music(self) -> None:
+        """Resume paused background music, or start one if needed."""
+        if AudioSettings.MUTE or AudioSettings.MUTE_MUSIC:
+            return
+        if self._music_is_paused:
+            pygame.mixer.music.unpause()
+            self._music_is_paused = False
+            return
+        self.play_random_bgm()
+
+    def play_pause_in_sound(self) -> None:
+        """Play the pause-enter sound effect once."""
+        if AudioSettings.MUTE or self.pause_in_sound is None:
+            return
+        self.pause_in_sound.play()
+
+    def play_pause_out_sound(self) -> None:
+        """Play the pause-exit sound effect once."""
+        if AudioSettings.MUTE or self.pause_out_sound is None:
+            return
+        self.pause_out_sound.play()
 
     def toggle_mute(self, resume_music: bool = True) -> bool:
         """Toggle global mute and return the new mute state."""
@@ -132,6 +180,7 @@ class AudioManager:
             # Stop all currently playing SFX/music immediately.
             pygame.mixer.stop()
             pygame.mixer.music.stop()
+            self._music_is_paused = False
             return True
 
         if resume_music and not AudioSettings.MUTE_MUSIC:

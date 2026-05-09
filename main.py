@@ -7,7 +7,14 @@ from core.sprites import Player
 from systems.fish_manager import FishManager
 from systems.audio_manager import AudioManager
 from crt import CRT
-from settings import ScreenSettings, InputSettings, ColorSettings
+from settings import (
+    ColorSettings,
+    FontSettings,
+    GameStateSettings,
+    InputSettings,
+    ScreenSettings,
+    UiSettings,
+)
 
 class GameManager:
     """Coordinate game state, flow, rendering phases, and input orchestration."""
@@ -20,6 +27,7 @@ class GameManager:
         """
 
         pygame.init()
+        self._initialize_audio_mixer()
         self.screen = pygame.display.set_mode(ScreenSettings.RESOLUTION, pygame.SCALED)
         pygame.display.set_caption(ScreenSettings.TITLE)
         if start_fullscreen:
@@ -27,12 +35,10 @@ class GameManager:
         self.clock = pygame.time.Clock()
 
         self.setup_controllers()
+        self._load_fonts()
 
-        self.player = Player(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2)
-        self.all_sprites = pygame.sprite.Group(self.player)
-
-        self.enemy_sprites = pygame.sprite.Group()
-        self.fish_manager = FishManager(self.enemy_sprites)
+        self._create_gameplay_entities()
+        self.game_state = GameStateSettings.PLAYING
 
         self.audio = AudioManager()
 
@@ -40,6 +46,27 @@ class GameManager:
         # when the player is already on a real CRT (i.e. fullscreen on the cabinet).
         self.full_screen = False
         self.crt = CRT(self.screen)
+
+    def _initialize_audio_mixer(self) -> None:
+        """Initialize pygame's mixer early so music and SFX are available."""
+        if pygame.mixer.get_init():
+            return
+        try:
+            pygame.mixer.init()
+        except pygame.error as error:
+            print(f"Audio mixer initialization failed: {error}")
+
+    def _load_fonts(self) -> None:
+        """Load UI fonts used by pause and game-over overlays."""
+        self.overlay_font = pygame.font.Font(FontSettings.FONT, UiSettings.OVERLAY_FONT_SIZE)
+
+    def _create_gameplay_entities(self) -> None:
+        """Build player, enemy container, and fish manager for one session."""
+        self.player = Player(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2)
+        self.all_sprites = pygame.sprite.Group()
+        self.all_sprites.add(self.player)
+        self.enemy_sprites = pygame.sprite.Group()
+        self.fish_manager = FishManager(self.enemy_sprites)
 
     # -------------------------
     # BOOT / SETUP
@@ -66,6 +93,12 @@ class GameManager:
         new_game_manager.run()
         sys.exit()
 
+    def restart_session(self) -> None:
+        """Restart gameplay entities and return to the active playing state."""
+        self._create_gameplay_entities()
+        self.game_state = GameStateSettings.PLAYING
+        self.audio.resume_music()
+
     def close_game(self) -> None:
         """Close the game process cleanly."""
         pygame.quit()
@@ -89,11 +122,31 @@ class GameManager:
         if event.key == pygame.K_ESCAPE:
             self.close_game()
 
+        if event.key == pygame.K_RETURN:
+            self._handle_enter_key()
+
         # F11 fullscreen toggle is global and intentionally falls through so
         # other handlers still see the press.
         if event.key == pygame.K_F11:
             pygame.display.toggle_fullscreen()
             self.full_screen = not self.full_screen
+
+    def _handle_enter_key(self) -> None:
+        """Handle Enter as pause/resume/restart based on the current game state."""
+        if self.game_state == GameStateSettings.PLAYING:
+            self.game_state = GameStateSettings.PAUSED
+            self.audio.pause_music()
+            self.audio.play_pause_in_sound()
+            return
+
+        if self.game_state == GameStateSettings.PAUSED:
+            self.game_state = GameStateSettings.PLAYING
+            self.audio.play_pause_out_sound()
+            self.audio.resume_music()
+            return
+
+        if self.game_state == GameStateSettings.GAME_OVER:
+            self.restart_session()
 
     def _handle_joybuttondown(self, event) -> None:
         """Route one controller button press."""
@@ -134,17 +187,41 @@ class GameManager:
     # -------------------------
 
     def _update_world(self) -> None:
+        if self.game_state != GameStateSettings.PLAYING:
+            return
+
         self.all_sprites.update()
         self.enemy_sprites.update()
-        self.fish_manager.update(self.player)
+        if self.fish_manager.update(self.player):
+            self.game_state = GameStateSettings.GAME_OVER
+            self.audio.stop_music()
 
     def _render_frame(self) -> None:
-        self.screen.fill(ColorSettings.BG_COLOR)
-        self.all_sprites.draw(self.screen)
-        self.enemy_sprites.draw(self.screen)
+        if self.game_state == GameStateSettings.PLAYING:
+            self.screen.fill(ColorSettings.BG_COLOR)
+            self.all_sprites.draw(self.screen)
+            self.enemy_sprites.draw(self.screen)
+        elif self.game_state == GameStateSettings.PAUSED:
+            self.screen.fill(ColorSettings.BLACK)
+            self._draw_centered_overlay(UiSettings.PAUSE_TEXT)
+        elif self.game_state == GameStateSettings.GAME_OVER:
+            self.screen.fill(ColorSettings.BLACK)
+            self._draw_centered_overlay(UiSettings.GAME_OVER_TEXT)
+
         # Apply CRT pass after world/UI rendering.
         if not self.full_screen:
             self.crt.draw()
+
+    def _draw_centered_overlay(self, title_text: str) -> None:
+        """Draw one centered overlay title for pause and game-over screens.
+
+        Args:
+            title_text: Main large text line.
+        """
+        title_surface = self.overlay_font.render(title_text, True, ColorSettings.WHITE)
+        title_rect = title_surface.get_rect(center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2))
+
+        self.screen.blit(title_surface, title_rect)
 
     def run(self):
         """Run the main game loop until the player quits."""

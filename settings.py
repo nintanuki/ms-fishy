@@ -9,9 +9,11 @@ class ColorSettings:
     GREEN = (0, 255, 0)
     YELLOW = (255, 255, 0)
     BLUE = (0, 0, 255)
+    LIGHT_BLUE = (0, 255, 255)
+    FOUNTAIN_BLUE = (102, 168, 176)
+    DARK_TURQUOISE = (5, 195, 221) # AQUA BLUE
 
-    BG_COLOR = BLUE
-    OVERLAY_BACKGROUND = WHITE
+    BG_COLOR = DARK_TURQUOISE
 
 class ScreenSettings:
     """Class to hold all the settings related to the screen."""
@@ -21,7 +23,23 @@ class ScreenSettings:
     FPS = 60
     CRT_ALPHA_RANGE = (75, 90)
     CRT_SCANLINE_HEIGHT = 3
-    TITLE = "Pygame Template"  # Replace with your project's name.
+    TITLE = "Fishy"
+
+
+class UiSettings:
+    """UI text content and font-size settings for gameplay overlays."""
+
+    GAME_OVER_TEXT = "GAME OVER"
+    PAUSE_TEXT = "PAUSED"
+    OVERLAY_FONT_SIZE = 52
+
+
+class GameStateSettings:
+    """Canonical state names for the game loop state machine."""
+
+    PLAYING = "playing"
+    PAUSED = "paused"
+    GAME_OVER = "game_over"
 
 class InputSettings:
     """Controller button and axis mappings used by gameplay and menus.
@@ -49,8 +67,9 @@ class InputSettings:
 
 class PlayerSettings:
     """Player-specific settings like movement speed."""
-    SPEED = 5
+    SPEED = 3
     SIZE = (16, 16)
+    COLOR = (255, 255, 0)
     # % of the eaten fish's size is added to the player
     PLAYER_GROWTH_COEFFICIENT = 0.10
 
@@ -73,6 +92,10 @@ class FishSettings:
     BODY_HEIGHT_RATIO = 0.5
     # Fish tail width as a fraction of size.
     TAIL_WIDTH_RATIO = 0.33
+    # Fish eye side length as a fraction of fish size.
+    EYE_SIZE_RATIO = 0.12
+    # Eye horizontal offset from the nose toward the tail-start, as fraction of size.
+    EYE_NOSE_OFFSET_RATIO = 0.25
 
 class FontSettings:
     """Font files, sizes, and text-color mappings for UI rendering."""
@@ -111,6 +134,9 @@ class AssetPaths:
         os.path.join(MUSIC_DIR, '8bit-aquarium.mp3'),
     ]
     MUSIC_TRACKS = NORMAL_MUSIC_TRACKS
+
+    PAUSE_IN_SOUND = os.path.join(AUDIO_DIR, 'sound', 'sfx_sounds_pause2_in.ogg')
+    PAUSE_OUT_SOUND = os.path.join(AUDIO_DIR, 'sound', 'sfx_sounds_pause2_out.ogg')
 
 class DebugSettings:
     """Settings related to debugging features."""

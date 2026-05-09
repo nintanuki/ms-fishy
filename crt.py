@@ -26,7 +26,7 @@ class CRT:
         """
         line_height = ScreenSettings.CRT_SCANLINE_HEIGHT
         for y in range(0, ScreenSettings.HEIGHT, line_height):
-            pygame.draw.line(surf, ColorSettings.OVERLAY_BACKGROUND, (0, y), (ScreenSettings.WIDTH, y), 1)
+            pygame.draw.line(surf, ColorSettings.BLACK, (0, y), (ScreenSettings.WIDTH, y), 1)
 
     def draw(self):
         """Draws the CRT effect by copying the base TV image, applying a random alpha for flickering,

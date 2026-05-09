@@ -26,9 +26,19 @@
 
 1. `quit_combo_pressed()` — early-exit on the held quit chord.
 2. `_process_events()` — drain pygame's event queue and dispatch to the typed handlers.
-3. `_update_world()` — advance `all_sprites`, `enemy_sprites`, and `FishManager`.
-4. `_render_frame()` — `screen.fill(BG_COLOR)`, draw `all_sprites`, draw `enemy_sprites`, then the CRT overlay (windowed only).
+3. `_update_world()` — if state is `playing`, advance `all_sprites`, `enemy_sprites`, and `FishManager`.
+4. `_render_frame()` — render by state:
+  - `playing`: `screen.fill(BG_COLOR)` + world sprites.
+  - `paused`: black background + centered pause text.
+  - `game_over`: black background + centered game-over text and restart prompt.
+  Then CRT overlay (windowed only).
 5. `pygame.display.flip()` and `clock.tick(FPS)`.
+
+`Enter` drives state transitions:
+
+- `playing -> paused` (pause SFX in, music paused)
+- `paused -> playing` (pause SFX out, music resumed)
+- `game_over -> playing` (session entities recreated, restart)
 
 ## 3. Sprites (`core/sprites.py`)
 
@@ -36,16 +46,16 @@
 
 A `pygame.sprite.Sprite` representing the player fish.
 
-- **Appearance:** Yellow square, initial size `PlayerSettings.SIZE`.
+- **Appearance:** Yellow polygon fish (diamond body + triangle tail) with a small black square eye; initial size `PlayerSettings.SIZE`.
 - **Movement:** Arrow keys and left analog stick. Speed is `PlayerSettings.SPEED` px/frame.
 - **Boundary:** `enforce_boundaries` clamps the rect to the screen edges each frame.
-- **Growth:** `FishManager.grow_player` replaces `player.image` and `player.rect` with a larger yellow square when the player eats a fish. Growth amount is `FishSettings.PLAYER_GROWTH_RATE` px per eat.
+- **Growth:** `FishManager.grow_player` calls `Player.grow(...)`, which rebuilds the fish polygon/mask at a larger size while preserving center position.
 
 ### `Fish`
 
 A `pygame.sprite.Sprite` representing an enemy fish.
 
-- **Appearance:** Red square of a random size in `[FishSettings.MIN_SIZE, FishSettings.MAX_SIZE]`.
+- **Appearance:** Red polygon fish (diamond body + triangle tail) with a small black square eye of size `FishSettings.EYE_SIZE_RATIO * size`, placed at `FishSettings.EYE_NOSE_OFFSET_RATIO` from the nose toward the body.
 - **Spawn:** From off the left or right edge at a random vertical position. Direction is set to match the side it spawned from (left→right, right→left).
 - **Movement:** Constant horizontal speed in `[FishSettings.MIN_SPEED, FishSettings.MAX_SPEED]`. Self-destructs (`kill()`) once it clears the opposite edge by 50 px.
 
@@ -56,7 +66,9 @@ A `pygame.sprite.Sprite` representing an enemy fish.
 1. **Spawn timer:** increments each frame; fires `spawn_fish()` every `FishSettings.SPAWN_RATE` frames (≈1 s at 60 FPS) and resets.
 2. **Collision:** `check_collisions` calls `pygame.sprite.spritecollide` against the player.
    - Player rect area > fish rect area → `grow_player`, fish is killed.
-   - Player rect area ≤ fish rect area → `pygame.quit()` + `sys.exit()` (immediate exit; no game-over screen yet).
+  - Player rect area ≤ fish rect area → returns `True` to signal game-over to `GameManager`.
+
+`GameManager._update_world` consumes that signal and switches the state to `game_over` (no abrupt process exit).
 
 ## 5. Input
 
@@ -88,6 +100,8 @@ Single source of truth for all tunables.
 | `InputSettings`  | Controller button/axis indices + quit combo + analog threshold.       |
 | `PlayerSettings` | Player movement speed and initial sprite size.                        |
 | `FishSettings`   | Fish spawn rate, size range, speed range, player growth amount.       |
+| `UiSettings`     | Overlay text and font sizes for pause/game-over screens.               |
+| `GameStateSettings` | Canonical state names (`playing`, `paused`, `game_over`).           |
 | `FontSettings`   | Font file path.                                                       |
 | `AudioSettings`  | Mute toggles + music volume.                                          |
 | `AssetPaths`     | `__file__`-relative paths for non-font assets.                        |
@@ -114,10 +128,14 @@ docs/                           ARCHITECTURE, TODO, TESTING, CHANGELOG.
 .github/copilot-instructions.md Editor rules.
 ```
 
-## 9. Extension points
+## 9. Current state-machine scope
 
-- **Game-over screen:** replace the `pygame.quit()` / `sys.exit()` calls in `FishManager.check_collisions` with a transition to a game-over scene.
-- **Scene/state machine:** give `GameManager` a current-scene attribute and forward `_handle_*` / `_update_world` / `_render_frame` calls to it. Scenes: title, playing, game-over, pause.
+- Active states: `playing`, `paused`, `game_over`.
+- Not yet implemented: title screen and a full scene object architecture.
+
+## 10. Extension points
+
+- **Scene/state machine:** evolve string-state handling into dedicated scene classes and add the missing title scene.
 - **Score / HUD:** add a score counter to `GameManager` or a dedicated HUD class in `ui/`; draw it in `_render_frame` before the CRT pass.
 - **Sprite art:** replace the `pygame.Surface` placeholders in `Player.__init__` and `Fish.__init__` with loaded images.
 - **Audio:** initialize `pygame.mixer` in `GameManager.__init__` and call sound effects from `FishManager.grow_player` and the death branch.

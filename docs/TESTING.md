@@ -23,13 +23,16 @@ python main.py
 
 ## Gameplay
 
-10. The player (yellow square) is centered on screen at startup.
+10. The player (yellow fish polygon with a black eye) is centered on screen at startup.
 11. Arrow keys move the player in all four directions.
 12. Player cannot leave the screen edges.
-13. Fish (red squares) appear from the left or right edge and scroll across the screen.
+13. Fish (red fish polygons with black eyes) appear from the left or right edge and scroll across the screen.
 14. Fish that reach the opposite edge disappear without error.
 15. When the player overlaps a fish smaller than itself: the fish disappears and the player grows visibly.
-16. When the player overlaps a fish larger than itself: the session ends (currently exits immediately — no crash, no hang).
+16. When the player overlaps a fish larger than itself: a black game-over screen appears with centered white `GAME OVER` + restart prompt text (no abrupt process exit).
+17. Pressing `Enter` during gameplay pauses updates, pauses music, and shows a black pause screen with centered white pause text.
+18. Pressing `Enter` on pause resumes gameplay, resumes music, and hides the pause overlay.
+19. Pressing `Enter` on game-over restarts the session.
 
 ## Sign-off
 
