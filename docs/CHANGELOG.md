@@ -448,6 +448,92 @@ doing the actual implementation.
 **Why:** Centralizes all fish lifecycle logic, keeping `GameManager` thin.
 **Editor:** Bryan
 
+---
+
+## 2026-05-09T16:30:00-04:00 — pass 1.3 scene refactoring: Scene base class and SceneManager
+
+**File:** core/scene.py
+**Lines (at time of edit):** (new file)
+**After:**
+    Base `Scene` class with lifecycle hooks: on_enter, on_exit, handle_event, update, render.
+    Subclasses override the methods they need.
+**Why:** Replaces string-based game_state with first-class scene objects (Pass 1.3).
+
+**File:** systems/scene_manager.py
+**Lines (at time of edit):** (new file)
+**After:**
+    `SceneManager` class with current property and change_to(scene) method.
+    Calls on_exit on the old scene and on_enter on the new scene during transitions.
+**Why:** Coordinates scene transitions and lifecycle. GameManager now holds a SceneManager instance instead of managing state strings.
+
+**File:** ui/scenes/__init__.py
+**Lines (at time of edit):** (new file)
+**After:** Empty package docstring.
+**Why:** Enables the scenes package and future scene subclasses.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** (new file)
+**After:**
+    PlayScene class encapsulates all gameplay logic.
+    Owns: player, all_sprites, enemy_sprites, fish_manager, bg_surface, and local PLAYING/PAUSED state.
+    Handles Enter/START for pause toggle; Enter/START trigger pause/resume with SFX and music control.
+    update() advances sprites and FishManager; on game-over transitions to GameOverScene.
+    render() draws ocean gradient + sprites when PLAYING, or black + "PAUSED" text when PAUSED.
+**Why:** Extracts gameplay from GameManager into a dedicated scene. Moves gradient generation (build_gradient_surface) into this scene.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** (new file)
+**After:**
+    GameOverScene class for the game-over state.
+    render() draws black background + centered "GAME OVER" text.
+    handle_event() listens for Enter/START to restart by transitioning to a fresh PlayScene.
+**Why:** Wraps the current game-over state as a real scene.
+
+**File:** main.py
+**Lines (at time of edit):** 1-19 (imports), 48-63 (__init__), 97-104 (setup), 107-135 (input handling), 159-176 (main loop)
+**Before:**
+    Imports: core.sprites, systems.fish_manager, utils.text, GameStateSettings
+    __init__: called _create_gameplay_entities(), held player/all_sprites/enemy_sprites/fish_manager/bg_surface/game_state
+    _create_gameplay_entities, reset_game methods
+    Input handlers: _handle_pause_action, _handle_enter_key, _handle_start_button called reset_game or toggled game_state
+    _update_world: checked game_state and updated sprites/FishManager
+    _render_frame: rendered by game_state string
+    _draw_centered_overlay helper method
+**After:**
+    Imports: removed core.sprites and systems.fish_manager; added systems.scene_manager
+    __init__: creates SceneManager and transitions to PlayScene(self)
+    Removed: _create_gameplay_entities, reset_game, _draw_centered_overlay
+    Input handlers: global handlers (Esc, F11, quit-combo, BACK) stay in GameManager; scene-specific input (Enter, START) forwarded to scenes.current.handle_event(event)
+    _update_world: calls scenes.current.update()
+    _render_frame: calls scenes.current.render(screen) then applies CRT pass
+    Removed build_gradient_surface from main.py (moved to PlayScene)
+**Why:** Refactors GameManager to be a thin coordinator; all gameplay state and logic now live in scenes (Pass 1.3 requirement).
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 1-60 (sections 1-3 rewritten), 63-123 (renamed sections 3-5 to 4-5), 191-217 (sections 8-11 updated with new source tree and extension points)
+**Before:**
+    Section 1 diagram showed GameManager with events/state/render inputs.
+    Section 2 described frame loop with game_state string management.
+    Section 3 was Sprites; input routing mentioned specific handler methods by name.
+    Sections 4+ covered fish manager, input, CRT, settings, etc.
+**After:**
+    Section 1 diagram updated to show SceneManager in the middle with Scene subclasses.
+    Section 2 explains frame loop delegates to scenes; global input handled by GameManager, scene input forwarded.
+    New Section 3 introduces Scene base class, lifecycle hooks, and current scene implementations (PlayScene, GameOverScene).
+    Section 4+ (formerly 3+) Sprites, fish manager, input, CRT, settings adjusted for new architecture.
+    Section 9 source tree updated with core/scene.py, systems/scene_manager.py, ui/scenes/ package.
+    Section 11 extension points updated: scene/state machine done; score/HUD and sprite art remain.
+**Why:** Documents the new scene-based architecture as the source of truth for future work.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 1, item 1.3 checklist line
+**Before:** `- [ ] Scene base class + SceneManager`
+**After:** `- [x] Scene base class + SceneManager`
+**Why:** Marks Pass 1 item 1.3 as completed.
+
+**Editor:** GitHub Copilot (Claude Haiku 4.5)
+
+
 **File:** settings.py
 **Lines (at time of edit):** 50-55 (added)
 **After:** Added `PlayerSettings` (SPEED, SIZE) and `FishSettings` (SPAWN_RATE, MIN_SIZE, MAX_SIZE, MIN_SPEED, MAX_SPEED, PLAYER_GROWTH_RATE).

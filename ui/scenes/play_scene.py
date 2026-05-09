@@ -1,0 +1,144 @@
+"""Scene for active gameplay."""
+
+from __future__ import annotations
+
+import pygame
+
+from core.scene import Scene
+from core.sprites import Player
+from systems.fish_manager import FishManager
+from settings import (
+    ColorSettings,
+    GameStateSettings,
+    InputSettings,
+    ScreenSettings,
+    UiSettings,
+)
+from utils.text import draw_centered_text
+
+
+def build_gradient_surface(
+    width: int,
+    height: int,
+    color_top: tuple[int, int, int],
+    color_bottom: tuple[int, int, int],
+) -> pygame.Surface:
+    """Pre-render a vertical gradient surface for use as the game background.
+
+    Args:
+        width: Surface width in pixels.
+        height: Surface height in pixels.
+        color_top: RGB color at y=0 (top of screen).
+        color_bottom: RGB color at y=height-1 (bottom of screen).
+
+    Returns:
+        pygame.Surface: The rendered gradient surface.
+    """
+    surface = pygame.Surface((width, height))
+    for y in range(height):
+        t = y / max(1, height - 1)
+        r = int(color_top[0] + (color_bottom[0] - color_top[0]) * t)
+        g = int(color_top[1] + (color_bottom[1] - color_top[1]) * t)
+        b = int(color_top[2] + (color_bottom[2] - color_top[2]) * t)
+        pygame.draw.line(surface, (r, g, b), (0, y), (width - 1, y))
+    return surface
+
+
+class PlayScene(Scene):
+    """Scene for active gameplay and pausing."""
+
+    def __init__(self, game):
+        """Initialize the play scene with a fresh player and fish manager.
+        
+        Args:
+            game: The GameManager instance that owns this scene.
+        """
+        super().__init__(game)
+        self._create_gameplay_entities()
+        self.bg_surface = build_gradient_surface(
+            ScreenSettings.WIDTH, ScreenSettings.HEIGHT,
+            ColorSettings.BG_COLOR_TOP, ColorSettings.BG_COLOR_BOTTOM,
+        )
+        self._state = GameStateSettings.PLAYING  # local PLAYING/PAUSED state
+
+    def _create_gameplay_entities(self) -> None:
+        """Build player, enemy container, and fish manager for one session."""
+        self.player = Player(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2)
+        self.all_sprites = pygame.sprite.Group()
+        self.all_sprites.add(self.player)
+        self.enemy_sprites = pygame.sprite.Group()
+        self.fish_manager = FishManager(self.enemy_sprites)
+
+    def on_enter(self) -> None:
+        """Called when entering this scene from another scene."""
+        self._state = GameStateSettings.PLAYING
+        self.game.audio.resume_music()
+
+    def on_exit(self) -> None:
+        """Called when leaving this scene."""
+        pass
+
+    def _handle_pause_action(self) -> None:
+        """Toggle pause on or off, including the audio side-effects for each transition."""
+        if self._state == GameStateSettings.PLAYING:
+            self._state = GameStateSettings.PAUSED
+            self.game.audio.pause_music()
+            self.game.audio.play("pause_in")
+            return
+
+        if self._state == GameStateSettings.PAUSED:
+            self._state = GameStateSettings.PLAYING
+            self.game.audio.play("pause_out")
+            self.game.audio.resume_music()
+
+    def handle_event(self, event: pygame.event.EventType) -> None:
+        """Handle input events for the play scene.
+        
+        Args:
+            event: The pygame event to process.
+        """
+        # Note: global events (Esc, F11, BACK, quit-combo) are handled
+        # by GameManager and never reach here.
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                self._handle_pause_action()
+        elif event.type == pygame.JOYBUTTONDOWN:
+            if event.button == InputSettings.JOY_BUTTON_START:
+                self._handle_pause_action()
+
+    def update(self) -> None:
+        """Advance gameplay by one frame."""
+        if self._state != GameStateSettings.PLAYING:
+            return
+
+        self.all_sprites.update(joysticks=self.game.connected_joysticks)
+        self.enemy_sprites.update()
+        game_over, ate_count = self.fish_manager.update(self.player)
+        if ate_count > 0:
+            self.game.audio.play("gulp")
+        if game_over:
+            # Transition to game-over scene
+            self.game.audio.stop_music()
+            self.game.audio.play("scream")
+            from ui.scenes.game_over_scene import GameOverScene
+            self.game.scenes.change_to(GameOverScene(self.game))
+
+    def render(self, screen: pygame.Surface) -> None:
+        """Draw the play scene to the screen.
+        
+        Args:
+            screen: The pygame surface to draw to.
+        """
+        if self._state == GameStateSettings.PLAYING:
+            screen.blit(self.bg_surface, (0, 0))
+            self.all_sprites.draw(screen)
+            self.enemy_sprites.draw(screen)
+        elif self._state == GameStateSettings.PAUSED:
+            screen.fill(ColorSettings.BLACK)
+            draw_centered_text(
+                surface=screen,
+                text=UiSettings.PAUSE_TEXT,
+                font=self.game.overlay_font,
+                color=ColorSettings.WHITE,
+                center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2),
+            )

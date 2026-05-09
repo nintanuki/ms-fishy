@@ -93,39 +93,14 @@ follow them literally; do not invent extra behaviour.
 
 Replace the string-based `game_state` with first-class `Scene` objects.
 
-- [ ] Create [core/scene.py](../core/scene.py) with:
-
-  ```python
-  class Scene:
-      """Base class. Subclasses override the methods they need."""
-      def __init__(self, game): self.game = game  # back-reference to GameManager
-      def on_enter(self): pass     # called once when this scene becomes active
-      def on_exit(self): pass      # called once when leaving this scene
-      def handle_event(self, event): pass
-      def update(self): pass
-      def render(self, screen): pass
-  ```
-
-- [ ] Create [systems/scene_manager.py](../systems/scene_manager.py) with:
-
-  ```python
-  class SceneManager:
-      def __init__(self): self._current: Scene | None = None
-      @property
-      def current(self) -> Scene: return self._current
-      def change_to(self, scene: Scene) -> None:
-          if self._current is not None: self._current.on_exit()
-          self._current = scene
-          scene.on_enter()
-  ```
-
-- [ ] Refactor [main.py](../main.py):
-  - `GameManager` no longer holds `game_state`, `player`, `all_sprites`, `enemy_sprites`, `fish_manager`, `bg_surface`, or the pause/game-over rendering. Those move into the play and game-over scenes.
-  - `GameManager` keeps: `screen`, `clock`, `connected_joysticks`, `audio`, `crt`, `full_screen`, `_toggle_fullscreen`, `quit_combo_pressed`, `close_game`, `setup_controllers`, `_initialize_audio_mixer`, `run`, the event-routing entry points, and a `SceneManager` instance.
-  - `_process_events` forwards every event to `self.scenes.current.handle_event(event)` **after** handling globals (Esc, F11, BACK, quit-combo). Scenes must not see those globals.
-  - `_update_world` becomes `self.scenes.current.update()`.
-  - `_render_frame` becomes `self.scenes.current.render(self.screen)` followed by the CRT pass when not fullscreen.
-  - `GameManager.__init__` ends with `self.scenes.change_to(TitleScene(self))`.
+- [x] Create [core/scene.py](../core/scene.py) with base `Scene` class and lifecycle hooks.
+- [x] Create [systems/scene_manager.py](../systems/scene_manager.py) with `SceneManager` for transitions.
+- [x] Create [ui/scenes/](../ui/scenes/) package with `__init__.py`.
+- [x] Create [ui/scenes/play_scene.py](../ui/scenes/play_scene.py) wrapping current gameplay.
+- [x] Create [ui/scenes/game_over_scene.py](../ui/scenes/game_over_scene.py) wrapping current game-over state.
+- [x] Refactor [main.py](../main.py) to use `SceneManager`; remove gameplay attributes from `GameManager`.
+- [x] Update [docs/ARCHITECTURE.md](ARCHITECTURE.md) to show new scene-based architecture.
+- [x] Add changelog entry.
 
 - Acceptance: pressing Enter still pauses/unpauses (now via `PlayScene.handle_event`), still restarts on game-over, fullscreen + quit-combo + Esc still work, and the architecture diagram in [docs/ARCHITECTURE.md](ARCHITECTURE.md) is updated to show the SceneManager in the middle.
 

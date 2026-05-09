@@ -5,42 +5,71 @@
 ## 1. The shape of the program
 
 ```
-                        +-------------------+
-                        |     main.py       |
-                        |   GameManager     |   (coordinator)
-                        +---+-----+-----+---+
-                            |     |     |
-           +----------------+     |     +----------------+
-           v                      v                      v
-        events               world / state             render
-      (keyboard,             Player, FishManager      (screen fill
-       joystick)             collision loop)           + sprites
-                                                       + CRT pass)
+                    +---------------------+
+                    |     main.py       |
+                    |   GameManager     |   (coordinator)
+                    +-----+---------+---+
+                          |         |
+          +----------------+       +---------------+
+          v                        v               v
+      events / input          SceneManager       render
+   (keyboard, joystick)      (scene dispatch)   (to screen)
+                                   |
+                                   v
+                            +-----------+
+                            |   Scene   |
+                            +-----------+
+                                   A
+                      +------------+----------+
+                      |            |          |
+                      v            v          v
+                   PlayScene   TitleScene   GameOverScene
+                   (gameplay)   (title)     (game-over)
 ```
 
-`GameManager` owns the screen, the clock, the cached joystick list, the fullscreen flag, the `Player` sprite, and the `FishManager`. Everything else — future UI, audio, persistence — should live in modules under `core/`, `systems/`, `ui/`, or `utils/` and be coordinated through `GameManager`.
+`GameManager` owns the screen, the clock, the cached joystick list, the fullscreen flag, and a `SceneManager` instance. Global input (Esc quit, F11 fullscreen, controller quit-chord, BACK) is handled by `GameManager`. Everything else — gameplay, scenes, UI, audio, persistence — is coordinated through scenes and the `SceneManager`.
 
 ## 2. Frame loop
 
 `GameManager.run()` per frame:
 
 1. `quit_combo_pressed()` — early-exit on the held quit chord.
-2. `_process_events()` — drain pygame's event queue and dispatch to the typed handlers.
-3. `_update_world()` — if state is `playing`, advance `all_sprites`, `enemy_sprites`, and `FishManager`.
-4. `_render_frame()` — render by state:
-  - `playing`: blit pre-rendered `bg_surface` (ocean gradient) + world sprites.
-  - `paused`: black background + centered pause text.
-  - `game_over`: black background + centered game-over text and restart prompt.
-  Then CRT overlay (windowed only).
+2. `_process_events()` — drain pygame's event queue; handle global input in `GameManager`, forward scene-specific input to `scenes.current.handle_event(event)`.
+3. `_update_world()` — calls `scenes.current.update()` to advance the active scene.
+4. `_render_frame()` — calls `scenes.current.render(screen)` to draw the active scene, then applies CRT overlay (windowed only).
 5. `pygame.display.flip()` and `clock.tick(FPS)`.
 
-`Enter` drives state transitions:
+## 3. Scenes (`core/scene.py`, `systems/scene_manager.py`, `ui/scenes/`)
 
-- `playing -> paused` (pause SFX in, music paused)
-- `paused -> playing` (pause SFX out, music resumed)
-- `game_over -> playing` (session entities recreated, restart)
+A `Scene` is a discrete game state that handles its own events, updates, and rendering. The `SceneManager` ensures only one scene is active at a time and calls transition hooks.
 
-## 3. Sprites (`core/sprites.py`)
+### Scene lifecycle
+
+- `on_enter()` — called once when this scene becomes active.
+- `handle_event(event)` — called for each pygame event (after globals are handled by `GameManager`).
+- `update()` — called once per frame to advance the scene.
+- `render(screen)` — called once per frame to draw to the screen.
+- `on_exit()` — called once when leaving this scene.
+
+### Scenes in the game
+
+#### `PlayScene` (`ui/scenes/play_scene.py`)
+
+Handles active gameplay and pausing. Owns the player, all sprites, enemy sprites, and fish manager.
+
+- **On Enter:** Resume music, set local state to PLAYING.
+- **Handle Events:** Enter/START toggles pause (pause/resume SFX, music pause/resume); global input is not forwarded here.
+- **Update:** If PLAYING, advance sprites and fish manager; check for game-over and transition to GameOverScene if needed. If PAUSED, do nothing.
+- **Render:** If PLAYING, draw ocean gradient, sprites. If PAUSED, draw black background + centered pause text.
+
+#### `GameOverScene` (`ui/scenes/game_over_scene.py`)
+
+Displays the game-over screen.
+
+- **Render:** Black background + centered game-over text.
+- **Handle Events:** Enter/START transitions to a fresh PlayScene.
+
+
 
 ### `Player`
 
@@ -66,28 +95,27 @@ A `pygame.sprite.Sprite` representing an enemy fish.
 1. **Spawn timer:** increments each frame; fires `spawn_fish()` every `FishSettings.SPAWN_RATE` frames (≈1 s at 60 FPS) and resets.
 2. **Collision:** `check_collisions` calls `pygame.sprite.spritecollide` against the player.
    - Player rect area > fish rect area → `grow_player`, fish is killed.
-  - Player rect area ≤ fish rect area → returns `True` to signal game-over to `GameManager`.
+  - Player rect area ≤ fish rect area → returns `True` to signal game-over.
 
-`GameManager._update_world` consumes that signal and switches the state to `game_over` (no abrupt process exit).
+When game-over is detected, the scene transitions automatically to `GameOverScene`.
 
 ## 5. Input
 
 **Parity rule:** every action available on the keyboard must also be reachable on the controller. Keep this invariant when adding new input actions.
 
-**Handler design rule:** input handlers (`_handle_enter_key`, `_handle_start_button`, etc.) must never call each other. When two input sources share a behaviour, extract that behaviour into a dedicated action method (e.g. `_handle_pause_action`) and have each handler call the action method directly. This keeps every handler self-contained and prevents one input path from silently inheriting unrelated side-effects of another.
+**Handler design rule:** input handlers (e.g. methods in scenes) must never call each other. When two input sources share a behaviour, extract that behaviour into a dedicated action method (e.g. `_handle_pause_action`) and have each handler call the action method directly. This keeps every handler self-contained and prevents one input path from silently inheriting unrelated side-effects of another.
 
-Events are routed by type:
+**Global input routing:** `GameManager` handles global input (Esc quit, F11 fullscreen, controller quit-chord, BACK fullscreen). After global handlers, scene-specific input is forwarded to `scenes.current.handle_event(event)`.
 
-- `KEYDOWN` → `_handle_keydown`. `Esc` quits; `F11` calls `_toggle_fullscreen`; `Enter` → `_handle_enter_key` (pause/resume/restart).
-- `JOYBUTTONDOWN` → `_handle_joybuttondown`. Quit-chord check; `BACK` calls `_toggle_fullscreen`; `START` → `_handle_start_button` (pause/resume only).
+Events are routed by type in `GameManager`:
 
-Both fullscreen entry points share a single `_toggle_fullscreen()` helper so the `pygame.display.toggle_fullscreen()` call and the `self.full_screen` flag stay in sync from a single location.
-- `JOYHATMOTION` → `_handle_joyhatmotion` (stub).
-- `JOYAXISMOTION` → `_handle_joyaxismotion` (stub).
+- `KEYDOWN` → `_handle_keydown`. `Esc` is handled globally; `F11` is handled globally; other keys are forwarded to the scene.
+- `JOYBUTTONDOWN` → `_handle_joybuttondown`. Quit-chord check is handled globally; `BACK` is handled globally; other buttons are forwarded to the scene.
+- `JOYHATMOTION` → forwarded to scene.
+- `JOYAXISMOTION` → forwarded to scene.
 
-Both `_handle_enter_key` and `_handle_start_button` delegate to `_handle_pause_action` for the shared pause/resume logic, and both handle restart from the game-over state independently.
+Player movement from the analog stick is polled directly in `Player.input()` each frame rather than being event-driven, so it is continuous. `PlayScene.update()` passes its cached `game.connected_joysticks` list to `all_sprites.update(joysticks=...)`, which forwards it to `Player.input()` — no per-frame `pygame.joystick.Joystick(i)` re-queries.
 
-Player movement from the analog stick is polled directly in `Player.input()` each frame rather than being event-driven, so it is continuous. `GameManager._update_world` passes its cached `connected_joysticks` list to `all_sprites.update(joysticks=...)`, which forwards it to `Player.input()` — no per-frame `pygame.joystick.Joystick(i)` re-queries.
 
 The joystick list is cached once at startup via `setup_controllers()`. Hot-plug requires re-running that method or re-init.
 
@@ -124,11 +152,19 @@ assets/
   font/Pixeled.ttf              Pixel font for retro UI text.
   graphics/effects/tv.png       CRT overlay texture.
 core/
+  scene.py                      Base Scene class for game states.
   sprites.py                    Player and Fish sprite classes.
 systems/
+  scene_manager.py              Scene manager for state transitions.
   fish_manager.py               Fish spawning, collision, and player growth.
-ui/                             (empty) Screens and HUD widgets go here.
-utils/                          (empty) Pure helpers go here.
+  audio_manager.py              Data-driven sound and music system.
+ui/
+  scenes/
+    __init__.py
+    play_scene.py               Active gameplay + pause overlay.
+    game_over_scene.py          Game-over screen.
+utils/
+  text.py                       Centered text drawing helper.
 crt.py                          CRT post-processing overlay.
 main.py                         Entry point + GameManager.
 settings.py                     All tunables.
@@ -138,8 +174,8 @@ docs/                           ARCHITECTURE, TODO, TESTING, CHANGELOG.
 
 ## 9. Current state-machine scope
 
-- Active states: `playing`, `paused`, `game_over`.
-- Not yet implemented: title screen and a full scene object architecture.
+- Active scenes: `PlayScene` (PLAYING/PAUSED substates), `GameOverScene`.
+- Not yet implemented: `TitleScene`, `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 1.4-1.6 and Pass 2).
 
 ## 10. Audio (`systems/audio_manager.py`)
 
@@ -184,8 +220,8 @@ describes the `AudioSettings` contract the manager expects.
 
 ## 11. Extension points
 
-- **Scene/state machine:** evolve string-state handling into dedicated scene classes and add the missing title scene.
-- **Score / HUD:** add a score counter to `GameManager` or a dedicated HUD class in `ui/`; draw it in `_render_frame` before the CRT pass.
+- **More scenes:** add `TitleScene`, `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 1.4-1.6 and Pass 2).
+- **Score / HUD:** add a score counter and HUD widget to `PlayScene`; draw it after sprites but before the CRT pass.
 - **Sprite art:** replace the `pygame.Surface` placeholders in `Player.__init__` and `Fish.__init__` with loaded images.
 
 ## 12. Project rules

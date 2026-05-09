@@ -3,46 +3,16 @@ from __future__ import annotations
 import pygame
 import sys
 
-from core.sprites import Player
-from systems.fish_manager import FishManager
 from systems.audio_manager import AudioManager
+from systems.scene_manager import SceneManager
 from crt import CRT
-from utils.text import draw_centered_text
 from settings import (
     ColorSettings,
     FontSettings,
-    GameStateSettings,
     InputSettings,
     ScreenSettings,
     UiSettings,
 )
-
-
-def build_gradient_surface(
-    width: int,
-    height: int,
-    color_top: tuple[int, int, int],
-    color_bottom: tuple[int, int, int],
-) -> pygame.Surface:
-    """Pre-render a vertical gradient surface for use as the game background.
-
-    Args:
-        width: Surface width in pixels.
-        height: Surface height in pixels.
-        color_top: RGB color at y=0 (top of screen).
-        color_bottom: RGB color at y=height-1 (bottom of screen).
-
-    Returns:
-        pygame.Surface: The rendered gradient surface.
-    """
-    surface = pygame.Surface((width, height))
-    for y in range(height):
-        t = y / max(1, height - 1)
-        r = int(color_top[0] + (color_bottom[0] - color_top[0]) * t)
-        g = int(color_top[1] + (color_bottom[1] - color_top[1]) * t)
-        b = int(color_top[2] + (color_bottom[2] - color_top[2]) * t)
-        pygame.draw.line(surface, (r, g, b), (0, y), (width - 1, y))
-    return surface
 
 
 class GameManager:
@@ -66,9 +36,6 @@ class GameManager:
         self.setup_controllers()
         self._load_fonts()
 
-        self._create_gameplay_entities()
-        self.game_state = GameStateSettings.PLAYING
-
         self.audio = AudioManager()
 
         # Post-processing: tracked separately because the CRT pass is skipped
@@ -76,11 +43,10 @@ class GameManager:
         self.full_screen = False
         self.crt = CRT(self.screen)
 
-        # Pre-rendered once; blitted every playing frame instead of screen.fill.
-        self.bg_surface = build_gradient_surface(
-            ScreenSettings.WIDTH, ScreenSettings.HEIGHT,
-            ColorSettings.BG_COLOR_TOP, ColorSettings.BG_COLOR_BOTTOM,
-        )
+        # Scene management
+        self.scenes = SceneManager()
+        from ui.scenes.play_scene import PlayScene
+        self.scenes.change_to(PlayScene(self))
 
     def _initialize_audio_mixer(self) -> None:
         """Initialize pygame's mixer early so music and SFX are available."""
@@ -92,16 +58,8 @@ class GameManager:
             print(f"Audio mixer initialization failed: {error}")
 
     def _load_fonts(self) -> None:
-        """Load UI fonts used by pause and game-over overlays."""
+        """Load UI fonts used by overlays."""
         self.overlay_font = pygame.font.Font(FontSettings.FONT, UiSettings.OVERLAY_FONT_SIZE)
-
-    def _create_gameplay_entities(self) -> None:
-        """Build player, enemy container, and fish manager for one session."""
-        self.player = Player(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2)
-        self.all_sprites = pygame.sprite.Group()
-        self.all_sprites.add(self.player)
-        self.enemy_sprites = pygame.sprite.Group()
-        self.fish_manager = FishManager(self.enemy_sprites)
 
     # -------------------------
     # BOOT / SETUP
@@ -114,12 +72,6 @@ class GameManager:
             pygame.joystick.Joystick(index)
             for index in range(pygame.joystick.get_count())
         ]
-
-    def reset_game(self) -> None:
-        """Restart gameplay entities and return to the active playing state."""
-        self._create_gameplay_entities()
-        self.game_state = GameStateSettings.PLAYING
-        self.audio.resume_music()
 
     def close_game(self) -> None:
         """Close the game process cleanly."""
@@ -144,67 +96,48 @@ class GameManager:
         self.full_screen = not self.full_screen
 
     def _handle_keydown(self, event) -> None:
-        """Route one keyboard press to the appropriate UI/gameplay handler."""
-        # Esc is the keyboard quit; useful while developing without a controller.
+        """Route one keyboard press to global handlers or scenes.
+        
+        Global handlers (Esc, F11) are processed here.
+        Scene-specific events are forwarded to the current scene.
+        """
+        # Global: Esc quits
         if event.key == pygame.K_ESCAPE:
             self.close_game()
 
-        if event.key == pygame.K_RETURN:
-            self._handle_enter_key()
-
+        # Global: F11 toggles fullscreen
         if event.key == pygame.K_F11:
             self._toggle_fullscreen()
+            return  # Don't forward to scene
 
-    def _handle_pause_action(self) -> None:
-        """Toggle pause on or off, including the audio side-effects for each transition."""
-        if self.game_state == GameStateSettings.PLAYING:
-            self.game_state = GameStateSettings.PAUSED
-            self.audio.pause_music()
-            self.audio.play("pause_in")
-            return
-
-        if self.game_state == GameStateSettings.PAUSED:
-            self.game_state = GameStateSettings.PLAYING
-            self.audio.play("pause_out")
-            self.audio.resume_music()
-
-    def _handle_enter_key(self) -> None:
-        """Handle Enter: pause/resume while playing, or restart after game-over."""
-        if self.game_state in (GameStateSettings.PLAYING, GameStateSettings.PAUSED):
-            self._handle_pause_action()
-            return
-
-        if self.game_state == GameStateSettings.GAME_OVER:
-            self.reset_game()
-
-    def _handle_start_button(self) -> None:
-        """Handle the controller START button: pause/resume, or restart after game-over."""
-        if self.game_state == GameStateSettings.GAME_OVER:
-            self.reset_game()
-            return
-
-        self._handle_pause_action()
+        # Forward to scene
+        self.scenes.current.handle_event(event)
 
     def _handle_joybuttondown(self, event) -> None:
-        """Route one controller button press."""
-        # Catch the multi-button quit chord on press for instant response;
-        # the outer per-frame check covers held-state quits.
+        """Route one controller button press to global handlers or scenes.
+        
+        Global handlers (quit-chord, BACK) are processed here.
+        Scene-specific events are forwarded to the current scene.
+        """
+        # Catch the multi-button quit chord on press for instant response
         if self.quit_combo_pressed():
             self.close_game()
 
+        # Global: BACK toggles fullscreen
         if event.button == InputSettings.JOY_BUTTON_BACK:
             self._toggle_fullscreen()
+            return  # Don't forward to scene
 
-        if event.button == InputSettings.JOY_BUTTON_START:
-            self._handle_start_button()
+        # Forward to scene
+        self.scenes.current.handle_event(event)
 
     def _handle_joyhatmotion(self, event) -> None:
-        """Route a D-pad direction event."""
-        pass
+        """Route a D-pad direction event to the current scene."""
+        self.scenes.current.handle_event(event)
 
     def _handle_joyaxismotion(self, event) -> None:
-        """Route a joystick or trigger motion event."""
-        pass
+        """Route a joystick or trigger motion event to the current scene."""
+        self.scenes.current.handle_event(event)
 
     def _process_events(self) -> None:
         """Drain pygame's event queue and dispatch by event type."""
@@ -225,50 +158,16 @@ class GameManager:
     # -------------------------
 
     def _update_world(self) -> None:
-        """Advance all game systems by one frame; ignored while not playing."""
-        if self.game_state != GameStateSettings.PLAYING:
-            return
-
-        self.all_sprites.update(joysticks=self.connected_joysticks)
-        self.enemy_sprites.update()
-        game_over, ate_count = self.fish_manager.update(self.player)
-        if ate_count > 0:
-            self.audio.play("gulp")
-        if game_over:
-            self.game_state = GameStateSettings.GAME_OVER
-            self.audio.stop_music()
-            self.audio.play("scream")
+        """Advance the current scene by one frame."""
+        self.scenes.current.update()
 
     def _render_frame(self) -> None:
-        """Draw the current game state to the screen, then apply the CRT pass."""
-        if self.game_state == GameStateSettings.PLAYING:
-            self.screen.blit(self.bg_surface, (0, 0))
-            self.all_sprites.draw(self.screen)
-            self.enemy_sprites.draw(self.screen)
-        elif self.game_state == GameStateSettings.PAUSED:
-            self.screen.fill(ColorSettings.BLACK)
-            self._draw_centered_overlay(UiSettings.PAUSE_TEXT)
-        elif self.game_state == GameStateSettings.GAME_OVER:
-            self.screen.fill(ColorSettings.BLACK)
-            self._draw_centered_overlay(UiSettings.GAME_OVER_TEXT)
+        """Render the current scene to the screen, then apply the CRT pass."""
+        self.scenes.current.render(self.screen)
 
-        # Apply CRT pass after world/UI rendering.
+        # Apply CRT pass after scene rendering.
         if not self.full_screen:
             self.crt.draw()
-
-    def _draw_centered_overlay(self, title_text: str) -> None:
-        """Draw a single centered text line for pause and game-over screens.
-
-        Args:
-            title_text: Text to render centered on screen.
-        """
-        draw_centered_text(
-            surface=self.screen,
-            text=title_text,
-            font=self.overlay_font,
-            color=ColorSettings.WHITE,
-            center=(ScreenSettings.WIDTH // 2, ScreenSettings.HEIGHT // 2),
-        )
 
     def run(self):
         """Run the main game loop until the player quits."""
