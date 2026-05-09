@@ -67,11 +67,11 @@ class InputSettings:
 
 class PlayerSettings:
     """Player-specific settings like movement speed."""
-    SPEED = 3
+    SPEED = 2
     SIZE = (16, 16)
     COLOR = (255, 255, 0)
     # % of the eaten fish's size is added to the player
-    PLAYER_GROWTH_COEFFICIENT = 0.10
+    PLAYER_GROWTH_COEFFICIENT = 0.05
 
 class FishSettings:
     """Settings related to the fish enemies."""
@@ -83,8 +83,8 @@ class FishSettings:
     SPAWN_RATE = ScreenSettings.FPS // 5 # Frames between spawns
     MIN_SIZE = 8
     MAX_SIZE = ScreenSettings.HEIGHT // 3
-    MIN_SPEED = 0.5
-    MAX_SPEED = 3
+    MIN_SPEED = 0.2
+    MAX_SPEED = 2
 
     # Fish body height as a fraction of size; values < 1 flatten the fish vertically.
     BODY_HEIGHT_RATIO = 0.5

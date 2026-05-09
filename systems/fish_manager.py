@@ -37,7 +37,7 @@ class FishManager:
 
         # random.random() gives 0.0 to 1.0. 
         # Squaring it (or cubing it) makes small numbers much more common.
-        skew_factor = random.random()**32  # Higher exponent = more small fish
+        skew_factor = random.random()**16  # Higher exponent = more small fish
         size_range = FishSettings.MAX_SIZE - FishSettings.MIN_SIZE
         size = int(FishSettings.MIN_SIZE + (skew_factor * size_range))
 
