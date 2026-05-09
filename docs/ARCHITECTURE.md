@@ -27,7 +27,7 @@
                    (gameplay)   (title)     (game-over)
 ```
 
-`GameManager` owns the screen, the clock, the cached joystick list, the fullscreen flag, a process-wide `Leaderboard` instance, and a `SceneManager` instance. Global input (Esc quit, F11 fullscreen, controller quit-chord, BACK) is handled by `GameManager`. Everything else — gameplay, scenes, UI, audio, persistence — is coordinated through scenes and the `SceneManager`.
+`GameManager` owns the screen, the clock, the cached joystick list, the fullscreen flag, the main-loop `running` flag, a process-wide `Leaderboard` instance, and a `SceneManager` instance. Global input (Esc quit, F11 fullscreen, controller quit-chord, BACK) is handled by `GameManager`. Everything else — gameplay, scenes, UI, audio, persistence — is coordinated through scenes and the `SceneManager`.
 
 ## 2. Frame loop
 
@@ -38,6 +38,7 @@
 3. `_update_world()` — calls `scenes.current.update()` to advance the active scene.
 4. `_render_frame()` — calls `scenes.current.render(screen)` to draw the active scene, then applies CRT overlay (windowed only).
 5. `pygame.display.flip()` and `clock.tick(FPS)`.
+6. On shutdown, `pygame.quit()` runs after the loop exits. When `DebugSettings.WEB_SAFE_EXIT` is false, shutdown still raises `SystemExit`; when true, quit requests only clear the loop flag so web builds can exit cleanly.
 
 ## 3. Scenes (`core/scene.py`, `systems/scene_manager.py`, `ui/scenes/`)
 
@@ -171,7 +172,7 @@ The quit chord is `InputSettings.JOY_BUTTON_QUIT_COMBO` (START + SELECT + L1 + R
 
 ## 6. CRT overlay (`crt.py`)
 
-`CRT` loads `AssetPaths.TV`, scales it to the screen, and on each `draw()` blits a fresh copy with a randomized alpha (flicker) and per-row scanlines. `GameManager._render_frame` calls it only in windowed mode so it doesn't double-up on a real CRT cabinet.
+`CRT` loads `AssetPaths.TV`, scales it to the screen, and on each `draw()` blits a fresh copy with a randomized alpha (flicker) and per-row scanlines. `GameManager` only constructs the CRT pass when `DebugSettings.ENABLE_CRT` is true, and `_render_frame` only calls it in windowed mode so it doesn't double-up on a real CRT cabinet.
 
 ## 7. Settings (`settings.py`)
 
@@ -189,7 +190,7 @@ Single source of truth for all tunables.
 | `FontSettings`   | Font file path.                                                       |
 | `AudioSettings`  | Mute toggles + music volume + per-sound volume toggles.              |
 | `AssetPaths`     | `__file__`-relative paths for non-font assets.                        |
-| `DebugSettings`  | Debug-only toggles (including optional large-player start for end-game testing). |
+| `DebugSettings`  | Debug-only toggles (including CRT enable/disable, web-safe loop exit, and optional large-player start for end-game testing). |
 
 **No magic numbers anywhere outside this file.**
 

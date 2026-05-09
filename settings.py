@@ -262,6 +262,16 @@ class AudioSettings:
 class DebugSettings:
     """Settings related to debugging features."""
 
+    # When False, the CRT overlay is skipped entirely. This is useful for
+    # pybag/browser runs and quick testing where the overlay texture or effect
+    # gets in the way.
+    ENABLE_CRT = False
+
+    # When True, closing the game exits the main loop cleanly instead of
+    # calling sys.exit(). This avoids browser-console "clean crash" noise in
+    # pybag/web builds while keeping desktop behavior opt-in.
+    WEB_SAFE_EXIT = True
+
     # When True, gameplay starts with a larger player body width to speed up
     # end-game testing.
     START_LARGE_PLAYER = False

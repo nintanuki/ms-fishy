@@ -625,6 +625,65 @@ doing the actual implementation.
     `PRESS START TO PLAY`) over ocean background + background fish unless user explicitly requests otherwise.
 **Why:** Prevents future Copilot sessions from reintroducing title-screen extras without direct user instruction.
 
+---
+
+## 2026-05-09T18:47:18-04:00 — settings CRT toggle for testing and pybag
+
+**File:** settings.py
+**Lines (at time of edit):** 264-272 (modified)
+**Before:**
+    class DebugSettings:
+        """Settings related to debugging features."""
+        START_LARGE_PLAYER = False
+        LARGE_PLAYER_SIZE = 640
+**After:**
+    class DebugSettings:
+        """Settings related to debugging features."""
+
+        ENABLE_CRT = True
+        START_LARGE_PLAYER = False
+        LARGE_PLAYER_SIZE = 640
+**Why:** Adds a single settings-level switch to disable the CRT overlay for pybag runs or quick testing without changing runtime code.
+
+**File:** main.py
+**Lines (at time of edit):** 11-17, 47-50, 175-176 (modified)
+**Before:**
+    from settings import (...)
+    self.crt = CRT(self.screen)
+    if not self.full_screen:
+        self.crt.draw()
+**After:**
+    from settings import (..., DebugSettings, ...)
+    self.crt_enabled = DebugSettings.ENABLE_CRT
+    self.crt = CRT(self.screen) if self.crt_enabled else None
+    if self.crt_enabled and not self.full_screen and self.crt is not None:
+        self.crt.draw()
+**Why:** Keeps the CRT decision at the game-manager render boundary and skips loading the overlay asset entirely when disabled.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 174, 192 (modified)
+**Before:**
+    CRT section described windowed-only rendering but not a settings kill switch.
+    DebugSettings was documented only as a large-player testing bucket.
+**After:**
+    CRT section now documents `DebugSettings.ENABLE_CRT` as the construction gate.
+    DebugSettings is documented as owning both CRT and large-player debug toggles.
+**Why:** Architecture documentation now matches the runtime control point for the CRT overlay.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** 18, 22 (modified)
+**Before:**
+    CRT overlay is visible (scanlines + slight flicker).
+    `F11` toggles fullscreen. CRT overlay disappears in fullscreen, reappears in windowed.
+**After:**
+    CRT visibility checks are conditional on `DebugSettings.ENABLE_CRT`.
+    Fullscreen CRT expectations are only asserted when the CRT toggle is enabled.
+**Why:** The smoke checklist must reflect that CRT is now an optional debug setting rather than always-on behavior.
+
+**Editor:** GitHub Copilot (GPT-5.4)
+
+---
+
 **File:** docs/ARCHITECTURE.md
 **Lines (at time of edit):** 62, 111 (modified)
 **Before:**
@@ -1003,6 +1062,64 @@ doing the actual implementation.
 **Lines (at time of edit):** 1-170 (modified)
 **After:** `GameManager.__init__` now creates `Player`, `all_sprites`, `enemy_sprites`, and `FishManager`. `_update_world` drives all three. `_render_frame` draws both sprite groups.
 **Why:** Wire the new sprites and manager into the frame loop.
+
+---
+
+## 2026-05-09T18:51:59-04:00 — web-safe exit toggle for pybag/browser runs
+
+**File:** settings.py
+**Lines (at time of edit):** 264-282 (modified)
+**Before:**
+    class DebugSettings:
+        """Settings related to debugging features."""
+
+        ENABLE_CRT = False
+        START_LARGE_PLAYER = False
+        LARGE_PLAYER_SIZE = 640
+**After:**
+    class DebugSettings:
+        """Settings related to debugging features."""
+
+        ENABLE_CRT = False
+        WEB_SAFE_EXIT = False
+        START_LARGE_PLAYER = False
+        LARGE_PLAYER_SIZE = 640
+**Why:** Adds a dedicated settings toggle so browser-safe builds can avoid `sys.exit()` while keeping existing desktop shutdown behavior available.
+
+**File:** main.py
+**Lines (at time of edit):** 1-4, 42-51, 82-89, 185-197 (modified)
+**Before:**
+    Imported `sys`.
+    `close_game()` always called `pygame.quit()` followed by `sys.exit()`.
+    `run()` loop was `while True`, so there was no clean loop-exit path.
+**After:**
+    Removed the unused `sys` import.
+    Added `self.running` and `self.web_safe_exit` state to `GameManager`.
+    `close_game()` now clears `self.running` and returns when `WEB_SAFE_EXIT` is enabled; otherwise it keeps desktop-style `SystemExit` shutdown.
+    `run()` now uses `while self.running`, breaks immediately after quit requests, and calls `pygame.quit()` after loop exit.
+**Why:** Keeps shutdown behavior controlled at the owning game-loop abstraction and makes pybag/browser exits stop the frame loop cleanly instead of raising a browser-console "clean crash".
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 25, 37-42, 192 (modified)
+**Before:**
+    `GameManager` ownership list did not mention the loop-running flag.
+    Frame-loop docs ended at `flip()` and `tick()`.
+    `DebugSettings` docs did not include any exit-mode toggle.
+**After:**
+    Documented the `running` flag on `GameManager`.
+    Documented the shutdown path after loop exit and the `WEB_SAFE_EXIT` behavior split.
+    `DebugSettings` docs now include the web-safe exit toggle.
+**Why:** Architecture docs now match the actual shutdown control flow.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** 23 (modified)
+**Before:**
+    `Esc` exits cleanly.
+**After:**
+    `Esc` exits cleanly, and with `DebugSettings.WEB_SAFE_EXIT = True` it should do so by leaving the loop without a `sys.exit()` traceback.
+**Why:** The manual smoke test now reflects the optional web-safe shutdown mode.
+
+**Editor:** GitHub Copilot (GPT-5.4)
 **Editor:** Bryan
 
 ## 2026-05-08 — Docs rewritten for Fishy

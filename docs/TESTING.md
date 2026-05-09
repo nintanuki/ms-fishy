@@ -15,12 +15,12 @@ python main.py
 1. Boot: window opens at 1280 × 720 (`ScreenSettings.RESOLUTION`), no console errors.
 2. Title bar shows `ScreenSettings.TITLE`.
 3. Background is a vertical gradient from aqua (`ColorSettings.BG_COLOR_TOP`) at the top to deep navy (`ColorSettings.BG_COLOR_BOTTOM`) at the bottom.
-4. CRT overlay is visible (scanlines + slight flicker).
+4. If `DebugSettings.ENABLE_CRT` is `True`, CRT overlay is visible (scanlines + slight flicker). If it is `False`, no CRT overlay is drawn.
 
 ## Globals
 
-5. `F11` toggles fullscreen. CRT overlay disappears in fullscreen, reappears in windowed.
-6. `Esc` exits cleanly.
+5. `F11` toggles fullscreen. When `DebugSettings.ENABLE_CRT` is `True`, the CRT overlay disappears in fullscreen and reappears in windowed.
+6. `Esc` exits cleanly. When `DebugSettings.WEB_SAFE_EXIT` is `True`, the game should close by leaving the main loop without a `sys.exit()` traceback.
 7. With a controller connected: `BACK` toggles fullscreen.
 8. With a controller connected: holding `START + SELECT + L1 + R1` exits cleanly.
 9. Closing the OS window via the title-bar `X` exits cleanly.
