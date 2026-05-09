@@ -73,8 +73,6 @@ class PlayerSettings:
     # % of the eaten fish's size is added to the player
     PLAYER_GROWTH_COEFFICIENT = 0.10
 
-# Add this to settings.py
-
 class FishSettings:
     """Settings related to the fish enemies."""
 

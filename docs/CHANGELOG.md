@@ -98,6 +98,52 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
 **Why:** Same as `core/__init__.py`.
 **Editor:** Bryan (Claude Opus 4.7)
 
+---
+
+## 2026-05-08 — Documentation and docstring pass
+
+**File:** README.md
+**Lines (at time of edit):** 6 (modified)
+**Before:** `"Sprites are placeholder colored squares — no art yet. No score, no title screen, no game-over screen."`
+**After:** `"Fish are rendered as polygon shapes (diamond body + triangle tail) with a black square eye — no imported sprite art yet. No score or title screen."`
+**Why:** Status section was outdated; polygon fish, eyes, and game-over screen have all been implemented.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** ~44 (modified)
+**Before:** Eye "placed at `FishSettings.EYE_NOSE_OFFSET_RATIO` from the nose toward the body."
+**After:** Eye "placed at the midpoint between the diamond body center and the nose tip."
+**Why:** `EYE_NOSE_OFFSET_RATIO` is defined in `FishSettings` but is not used by `build_fish_surface`; the actual implementation computes the midpoint of `diamond_center_x` and `nose_x`.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** ~68 (modified)
+**Before:** `[ ] ScreenSettings.TITLE is still "Pygame Template"`
+**After:** `[x] ScreenSettings.TITLE is still "Pygame Template"`
+**Why:** `settings.py` already has `TITLE = "Fishy"`.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** settings.py
+**Lines (at time of edit):** ~68 (modified)
+**Before:** `# Add this to settings.py` comment above `class FishSettings`.
+**After:** Comment removed.
+**Why:** Stale scaffolding note left over from when the class was first written; inaccurate since `FishSettings` is already in `settings.py`.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** core/sprites.py
+**Lines (at time of edit):** ~175 (modified)
+**Before:** `def update(self):` with no docstring.
+**After:** Added `"""Advance enemy fish position and remove it once it clears the screen."""`.
+**Why:** Every function must have a docstring per coding conventions.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+**File:** main.py
+**Lines (at time of edit):** ~182, ~190 (modified)
+**Before:** `_update_world` and `_render_frame` had no docstrings.
+**After:** Added one-line summary docstrings to both.
+**Why:** Every function must have a docstring per coding conventions.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
 **File:** utils/__init__.py
 **Lines (at time of edit):** (new file)
 **After:** `"""Pure helper functions and small utilities."""`

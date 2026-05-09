@@ -187,6 +187,7 @@ class GameManager:
     # -------------------------
 
     def _update_world(self) -> None:
+        """Advance all game systems by one frame; ignored while not playing."""
         if self.game_state != GameStateSettings.PLAYING:
             return
 
@@ -197,6 +198,7 @@ class GameManager:
             self.audio.stop_music()
 
     def _render_frame(self) -> None:
+        """Draw the current game state to the screen, then apply the CRT pass."""
         if self.game_state == GameStateSettings.PLAYING:
             self.screen.fill(ColorSettings.BG_COLOR)
             self.all_sprites.draw(self.screen)

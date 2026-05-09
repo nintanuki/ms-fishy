@@ -55,7 +55,7 @@ A `pygame.sprite.Sprite` representing the player fish.
 
 A `pygame.sprite.Sprite` representing an enemy fish.
 
-- **Appearance:** Red polygon fish (diamond body + triangle tail) with a small black square eye of size `FishSettings.EYE_SIZE_RATIO * size`, placed at `FishSettings.EYE_NOSE_OFFSET_RATIO` from the nose toward the body.
+- **Appearance:** Red polygon fish (diamond body + triangle tail) with a small black square eye of size `FishSettings.EYE_SIZE_RATIO * size`, placed at the midpoint between the diamond body center and the nose tip.
 - **Spawn:** From off the left or right edge at a random vertical position. Direction is set to match the side it spawned from (left→right, right→left).
 - **Movement:** Constant horizontal speed in `[FishSettings.MIN_SPEED, FishSettings.MAX_SPEED]`. Self-destructs (`kill()`) once it clears the opposite edge by 50 px.
 

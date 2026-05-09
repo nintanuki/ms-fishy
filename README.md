@@ -4,7 +4,7 @@ A classic eat-or-be-eaten arcade game. You are a fish. Eat fish smaller than you
 
 ## Status
 
-Early gameplay is working: the player moves around the screen, fish spawn from the left and right edges, collisions are detected, and eating a smaller fish grows the player. A larger fish hitting the player currently ends the session immediately. Sprites are placeholder colored squares — no art yet. No score, no title screen, no game-over screen.
+Early gameplay is working: the player moves around the screen, fish spawn from the left and right edges, collisions are detected, and eating a smaller fish grows the player. A larger fish hitting the player triggers a game-over screen with a restart prompt. Fish are rendered as polygon shapes (diamond body + triangle tail) with a black square eye — no imported sprite art yet. No score or title screen.
 
 ## Requirements
 

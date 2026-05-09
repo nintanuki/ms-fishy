@@ -79,7 +79,7 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 - [x] `pygame.display.set_mode((ScreenSettings.RESOLUTION), pygame.SCALED)` had redundant parens. Removed.
 - [x] Empty `core/`, `systems/`, `ui/`, and `utils/` folders now have `__init__.py` files so git tracks them.
 - [x] `Esc` is wired in `_handle_keydown` so the game runs without a controller.
-- [ ] `ScreenSettings.TITLE` is still `"Pygame Template"` — update to `"Fishy"`.
+- [x] `ScreenSettings.TITLE` is still `"Pygame Template"` — update to `"Fishy"`.
 - [ ] `FishManager.check_collisions` calls `pygame.quit()` / `sys.exit()` directly — should route through `GameManager.close_game()` or a scene transition instead.
 - [ ] `Player.input()` re-queries `pygame.joystick.Joystick(i)` every frame — should use the cached list from `GameManager`.
 

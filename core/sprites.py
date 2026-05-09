@@ -189,6 +189,7 @@ class Fish(pygame.sprite.Sprite):
         self.rect.y = random.randint(0, ScreenSettings.HEIGHT - body_height)
 
     def update(self):
+        """Advance enemy fish position and remove it once it clears the screen."""
         self.rect.x += self.speed * self.direction
         
         # Kill if off-screen
