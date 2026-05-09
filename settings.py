@@ -185,7 +185,7 @@ class AudioSettings:
         "pause_in":  os.path.join(AssetPaths.SOUND_DIR, 'sfx_sounds_pause2_in.ogg'),
         "pause_out": os.path.join(AssetPaths.SOUND_DIR, 'sfx_sounds_pause2_out.ogg'),
         "gulp":      os.path.join(AssetPaths.SOUND_DIR, 'gulp.ogg'),
-        "scream":    os.path.join(AssetPaths.SOUND_DIR, 'wilhelm_scream.ogg'),
+        "scream":    os.path.join(AssetPaths.SOUND_DIR, 'game_over.ogg'),
     }
 
     # Background music pool; one is chosen at random each time music starts,
