@@ -1,14 +1,25 @@
+from __future__ import annotations
+
 import pygame
 import random
 from settings import ColorSettings, FishSettings, InputSettings, PlayerSettings, ScreenSettings
 
 
-def build_fish_surface(size: int, color: tuple[int, int, int]) -> tuple[pygame.Surface, int]:
+def build_fish_surface(
+    size: int,
+    color: tuple[int, int, int],
+    color2: tuple[int, int, int] | None = None,
+) -> tuple[pygame.Surface, int]:
     """Return a right-facing fish surface and the fish body height.
+
+    A drop shadow is always rendered below-right. When `color2` is supplied the
+    body is filled with a vertical gradient from `color` (top/dorsal) to
+    `color2` (bottom/belly); otherwise the body is a flat `color`.
 
     Args:
         size: Conceptual fish body width in pixels.
-        color: RGB color for the fish body and tail polygons.
+        color: RGB body color, or the dorsal gradient color when color2 is given.
+        color2: Optional belly gradient color; enables gradient fill when set.
 
     Returns:
         tuple[pygame.Surface, int]: A rendered fish surface and its body height.
@@ -17,8 +28,10 @@ def build_fish_surface(size: int, color: tuple[int, int, int]) -> tuple[pygame.S
     tail_width = max(1, int(size * FishSettings.TAIL_WIDTH_RATIO))
     total_width = size + tail_width
     center_y = body_height // 2
+    shadow = FishSettings.SHADOW_OFFSET
 
-    image = pygame.Surface((total_width, body_height), pygame.SRCALPHA)
+    # Canvas is expanded to accommodate the drop shadow in the bottom-right.
+    image = pygame.Surface((total_width + shadow, body_height + shadow), pygame.SRCALPHA)
 
     tail_points = [
         (0, 0),
@@ -31,8 +44,35 @@ def build_fish_surface(size: int, color: tuple[int, int, int]) -> tuple[pygame.S
         (total_width, center_y),
         (tail_width + size // 2, body_height),
     ]
-    pygame.draw.polygon(image, color, tail_points)
-    pygame.draw.polygon(image, color, body_points)
+
+    # Drop shadow drawn first so the fish body renders cleanly on top.
+    shadow_tail = [(x + shadow, y + shadow) for x, y in tail_points]
+    shadow_body = [(x + shadow, y + shadow) for x, y in body_points]
+    pygame.draw.polygon(image, (0, 0, 0, 100), shadow_tail)
+    pygame.draw.polygon(image, (0, 0, 0, 100), shadow_body)
+
+    if color2 is not None:
+        # Gradient fill: horizontal scanlines clipped to the fish polygon shape
+        # via an alpha mask so transparent corners stay transparent.
+        mask_surf = pygame.Surface((total_width, body_height), pygame.SRCALPHA)
+        mask_surf.fill((0, 0, 0, 0))
+        pygame.draw.polygon(mask_surf, (255, 255, 255, 255), tail_points)
+        pygame.draw.polygon(mask_surf, (255, 255, 255, 255), body_points)
+
+        grad_surf = pygame.Surface((total_width, body_height), pygame.SRCALPHA)
+        for y in range(body_height):
+            t = y / max(1, body_height - 1)
+            r = int(color[0] + (color2[0] - color[0]) * t)
+            g = int(color[1] + (color2[1] - color[1]) * t)
+            b = int(color[2] + (color2[2] - color[2]) * t)
+            pygame.draw.line(grad_surf, (r, g, b, 255), (0, y), (total_width - 1, y))
+
+        # Multiply alpha channels so gradient is transparent outside fish shape.
+        grad_surf.blit(mask_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        image.blit(grad_surf, (0, 0))
+    else:
+        pygame.draw.polygon(image, color, tail_points)
+        pygame.draw.polygon(image, color, body_points)
 
     eye_size = max(1, int(size * FishSettings.EYE_SIZE_RATIO))
     nose_x = total_width - 1
@@ -61,7 +101,9 @@ class Player(pygame.sprite.Sprite):
         # on every grow() call (e.g. eating a size-8 fish gives 0.8 px growth; int
         # would round that to 0 each time, making growth invisible for small fish).
         self.size = float(PlayerSettings.SIZE[0])
-        self.base_image, _ = build_fish_surface(int(self.size), PlayerSettings.COLOR)
+        self.base_image, _ = build_fish_surface(
+            int(self.size), PlayerSettings.COLOR_TOP, PlayerSettings.COLOR_BOTTOM
+        )
         self.facing_direction = 1
         self.image = self.base_image
         self.rect = self.image.get_rect()
@@ -250,7 +292,9 @@ class Player(pygame.sprite.Sprite):
         """
         self.size = max(1.0, self.size + growth_amount)
         center = self.rect.center
-        self.base_image, _ = build_fish_surface(int(self.size), PlayerSettings.COLOR)
+        self.base_image, _ = build_fish_surface(
+            int(self.size), PlayerSettings.COLOR_TOP, PlayerSettings.COLOR_BOTTOM
+        )
         self.rect = self.base_image.get_rect(center=center)
         self._set_facing_direction(self.facing_direction, force=True)
 
@@ -281,7 +325,7 @@ class Fish(pygame.sprite.Sprite):
         self.speed = speed
         self.direction = 1 if side == "left" else -1
 
-        self.image, body_height = build_fish_surface(size, ColorSettings.RED)
+        self.image, body_height = build_fish_surface(size, random.choice(ColorSettings.FISH_PALETTE))
 
         # Left-moving fish face left. Mirroring horizontally keeps the nose pointed
         # in the direction of travel and the tail fanning out behind it.

@@ -13,6 +13,20 @@ class ColorSettings:
     FOUNTAIN_BLUE = (102, 168, 176)
     DARK_TURQUOISE = (5, 195, 221) # AQUA BLUE
 
+    # Retro fish palette — hand-picked to contrast against the aqua-to-navy background gradient.
+    # Units: RGB 0-255.
+    RETRO_CORAL = (255, 100, 80)       # warm salmon-red
+    RETRO_MINT = (80, 220, 160)        # seafoam green
+    RETRO_LAVENDER = (180, 130, 255)   # soft purple
+    RETRO_PEACH = (255, 190, 80)       # warm amber
+    RETRO_LIME = (130, 230, 60)        # chartreuse green
+    RETRO_SKY = (80, 160, 255)         # cornflower blue
+    FISH_PALETTE = [RETRO_CORAL, RETRO_MINT, RETRO_LAVENDER, RETRO_PEACH, RETRO_LIME, RETRO_SKY]
+
+    # Ocean background gradient endpoints — blended top-to-bottom each frame.
+    BG_COLOR_TOP = (60, 180, 210)      # sunlit aqua at the water surface
+    BG_COLOR_BOTTOM = (10, 30, 70)     # deep navy at the ocean floor
+
     BG_COLOR = DARK_TURQUOISE
 
 class ScreenSettings:
@@ -99,7 +113,9 @@ class PlayerSettings:
     FLIP_THRESHOLD = 0.1
 
     SIZE = (16, 16)
-    COLOR = (255, 255, 0)
+    # Body gradient: bright yellow dorsal side fading to warm orange belly; units: RGB 0-255.
+    COLOR_TOP = (255, 240, 60)         # bright yellow — dorsal (top of body)
+    COLOR_BOTTOM = (255, 130, 0)       # warm orange — belly (bottom of body)
     # Fraction of the eaten fish's size added to the player on each eat.
     PLAYER_GROWTH_COEFFICIENT = 0.05
 
@@ -124,6 +140,8 @@ class FishSettings:
     EYE_SIZE_RATIO = 0.12
     # Eye horizontal offset from the nose toward the tail-start, as fraction of size.
     EYE_NOSE_OFFSET_RATIO = 0.25
+    # Pixel offset for the drop shadow rendered behind every fish; adds perceived depth.
+    SHADOW_OFFSET = 2
 
 class FontSettings:
     """Font files, sizes, and text-color mappings for UI rendering."""

@@ -34,6 +34,46 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
   rest, instead of pasting the entire file.
 * New Entries should be BELOW this line, do not add new log entries to the top. These instructions must stay on top.
 
+## 2026-05-09 — retro visual pass: gradient background, fish shadow, player gradient, retro palette
+
+**File:** settings.py
+**Lines (at time of edit):** 3-16 (modified ColorSettings), 104-107 (modified PlayerSettings), 127-131 (modified FishSettings)
+**Before:**
+    DARK_TURQUOISE = (5, 195, 221)
+    BG_COLOR = DARK_TURQUOISE
+    ...
+    COLOR = (255, 255, 0)
+**After:**
+    DARK_TURQUOISE = (5, 195, 221)
+    RETRO_CORAL/MINT/LAVENDER/PEACH/LIME/SKY palette constants added
+    FISH_PALETTE list added
+    BG_COLOR_TOP = (60, 180, 210) / BG_COLOR_BOTTOM = (10, 30, 70) added
+    BG_COLOR = DARK_TURQUOISE (kept for fallback)
+    COLOR replaced by COLOR_TOP = (255,240,60) / COLOR_BOTTOM = (255,130,0)
+    SHADOW_OFFSET = 2 added to FishSettings
+**Why:** All visual constants live in settings.py per architecture rules. New gradient colors needed named constants rather than magic numbers.
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 1 (new import), 6-61 (build_fish_surface rewritten), 74 (Fish color), 120-122 (Player init), 268-270 (Player.grow)
+**Before:**
+    def build_fish_surface(size, color) — flat fill, no shadow
+    Fish: ColorSettings.RED
+    Player: PlayerSettings.COLOR (solid yellow)
+**After:**
+    def build_fish_surface(size, color, color2=None) — drop shadow always; gradient fill when color2 given
+    Fish: random.choice(ColorSettings.FISH_PALETTE)
+    Player: PlayerSettings.COLOR_TOP, COLOR_BOTTOM (yellow→orange gradient)
+**Why:** Drop shadow separates fish from background without changing the polygon silhouette. Gradient player is visually unique vs solid-color enemies. Retro palette gives each enemy distinct color without tying color to size.
+
+**File:** main.py
+**Lines (at time of edit):** 17 (new function), 51-54 (bg_surface init), 197 (render)
+**Before:**
+    self.screen.fill(ColorSettings.BG_COLOR)
+**After:**
+    build_gradient_surface() pre-renders an ocean depth gradient once at startup.
+    _render_frame blits self.bg_surface instead of filling with a flat color.
+**Why:** Vertical gradient (sunlit aqua → deep navy) adds depth cue and makes the retro look easier on the eyes without any sprite art.
+
 ---
 
 ## 2026-05-07 — Generic-template cleanup pass
