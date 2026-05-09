@@ -1,4 +1,4 @@
-# Fishy — Manual Testing Checklist
+# Ms. Fishy — Manual Testing Checklist
 
 Run after a non-trivial change.
 

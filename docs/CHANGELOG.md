@@ -590,7 +590,7 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
 **Why:** Wire the two new sounds at their natural trigger points in the game loop.
 **Editor:** GitHub Copilot (Claude Sonnet 4.6)
 
-## 2026-05-09 10:14 -04:00 � refactor: data-driven audio manager + portable template
+## 2026-05-09 10:14 -04:00 � refactor: data-driven audio manager + portable template
 
 **File:** systems/audio_manager.py
 **Lines (at time of edit):** entire file (rewrite)
@@ -644,3 +644,49 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
     extension points to section 11; removed the obsolete "Audio:
     initialize pygame.mixer..." extension-point bullet.
 **Why:** Architecture doc must reflect the new system.
+
+## 2026-05-09 — Ms. Fishy rebrand: title change + pink bow on player
+
+**File:** settings.py
+**Lines (at time of edit):** 40 (modified TITLE), 117-134 (added bow constants in PlayerSettings)
+**Before:**
+    TITLE = "Fishy"
+    ...
+    PLAYER_GROWTH_COEFFICIENT = 0.05
+**After:**
+    TITLE = "Ms. Fishy"
+    ...
+    PLAYER_GROWTH_COEFFICIENT = 0.05
+
+    # MS. FISHY BOW
+    BOW_WIDTH_RATIO = 0.55
+    BOW_HEIGHT_RATIO = 0.40
+    BOW_GAP_RATIO = 0.15
+    BOW_COLOR = (255, 105, 180)
+**Why:** The voice-recorded gulp/scream SFX sound like a cute girl, so the
+    fish is now Ms. Fishy (à la Ms. Pac-Man). Bow constants live in
+    `PlayerSettings` because only the player wears one; sized by ratios
+    so the bow scales with the fish as it grows.
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 8-135 (build_fish_surface extended), 196-201 and 264-271 (Player __init__/grow now request bow=True)
+**Before:** `build_fish_surface(size, color, color2=None)` — fish-only canvas.
+**After:** `build_fish_surface(size, color, color2=None, bow=False)` — when
+    `bow=True`, the canvas is grown vertically by `bow_offset_y`, all body/
+    tail/eye points are shifted down by that offset, and two mirrored
+    triangles (▷◁) meeting at a central apex are drawn above the body's top
+    point in `PlayerSettings.BOW_COLOR` with a matching drop shadow. `Player`
+    passes `bow=True` from both `__init__` and `grow()`.
+**Why:** Give the player a unique, readable visual marker (also closes the
+    "Player distinction" TODO item). The bow ships with the player surface so
+    flipping for facing direction (`pygame.transform.flip`) keeps the bow
+    correctly positioned without extra bookkeeping.
+
+**File:** README.md, docs/ARCHITECTURE.md, docs/TODO.md, docs/TESTING.md
+**Lines (at time of edit):** title headers updated; ARCHITECTURE Player
+    appearance bullet now mentions the pink bow; TODO Completed list gained
+    a "Ms. Fishy rebrand" entry and the "Player distinction" Visuals item is
+    marked `[x]`.
+**Why:** Required-actions rule — docs must reflect the rebrand and the new
+    visual element.
+**Editor:** GitHub Copilot (Claude Opus 4.7)

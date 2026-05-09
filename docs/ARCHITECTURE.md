@@ -1,4 +1,4 @@
-# Fishy — Architecture
+# Ms. Fishy — Architecture
 
 > **Maintenance rule:** every pass that meaningfully changes a system must update this document.
 
@@ -46,7 +46,7 @@
 
 A `pygame.sprite.Sprite` representing the player fish.
 
-- **Appearance:** Gradient polygon fish (yellow dorsal → orange belly, diamond body + triangle tail) with a small black square eye and a soft drop shadow. Built once at init and rebuilt only on `grow()`. Initial size `PlayerSettings.SIZE`.
+- **Appearance:** Gradient polygon fish (yellow dorsal → orange belly, diamond body + triangle tail) with a small black square eye, a soft drop shadow, and a pink bow (two mirrored triangles meeting at a central apex) floating above the body's top point — Ms. Fishy's signature accessory. Built once at init and rebuilt only on `grow()`. Initial size `PlayerSettings.SIZE`.
 - **Movement:** Arrow keys and left analog stick. Uses a velocity model: each frame of held input adds `PlayerSettings.ACCELERATION` to the velocity on that axis (capped at `PlayerSettings.MAX_SPEED`). When input is released, `PlayerSettings.DRAG` is multiplied into the velocity each frame until it falls below `PlayerSettings.STOP_THRESHOLD`, giving an underwater coast-and-stop feel. Direction flip waits until velocity exceeds `PlayerSettings.FLIP_THRESHOLD` so the sprite doesn't flicker while drifting to a stop. Sub-pixel accumulators (`_pos_x`, `_pos_y`) prevent fractional velocities from being silently discarded by `int()` truncation each frame.
 - **Boundary:** `enforce_boundaries` clamps the rect to the screen edges, zeroes velocity on any clamped axis (so the player doesn't fight the wall), and resyncs the float accumulators to the clamped position.
 - **Growth:** `FishManager.grow_player` calls `Player.grow(...)`, which rebuilds the fish polygon/mask at a larger size while preserving center position. `self.size` is stored as `float` so fractional growth (from `PLAYER_GROWTH_COEFFICIENT = 0.10`) accumulates across multiple fish eaten; the surface is always built from `int(self.size)`. Storing it as `int` would silently discard sub-pixel growth on every call.

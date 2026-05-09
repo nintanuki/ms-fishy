@@ -9,6 +9,7 @@ def build_fish_surface(
     size: int,
     color: tuple[int, int, int],
     color2: tuple[int, int, int] | None = None,
+    bow: bool = False,
 ) -> tuple[pygame.Surface, int]:
     """Return a right-facing fish surface and the fish body height.
 
@@ -16,10 +17,16 @@ def build_fish_surface(
     body is filled with a vertical gradient from `color` (top/dorsal) to
     `color2` (bottom/belly); otherwise the body is a flat `color`.
 
+    When `bow` is True, a small pink bow (two mirrored triangles meeting at a
+    central point) is drawn above the body's top apex — Ms. Fishy's signature
+    accessory. The canvas is grown vertically to accommodate it, so the body's
+    rect placement is unaffected for callers that pass `bow=False`.
+
     Args:
         size: Conceptual fish body width in pixels.
         color: RGB body color, or the dorsal gradient color when color2 is given.
         color2: Optional belly gradient color; enables gradient fill when set.
+        bow: Whether to draw the Ms. Fishy bow above the body apex.
 
     Returns:
         tuple[pygame.Surface, int]: A rendered fish surface and its body height.
@@ -30,19 +37,37 @@ def build_fish_surface(
     center_y = body_height // 2
     shadow = FishSettings.SHADOW_OFFSET
 
-    # Canvas is expanded to accommodate the drop shadow in the bottom-right.
-    image = pygame.Surface((total_width + shadow, body_height + shadow), pygame.SRCALPHA)
+    # Bow geometry — computed up front so the canvas can be grown vertically
+    # to fit the bow above the body. When bow is False, bow_offset_y is 0 and
+    # the canvas dimensions match the original (non-bow) layout exactly.
+    if bow:
+        bow_half_width = max(1, int(size * PlayerSettings.BOW_WIDTH_RATIO * 0.5))
+        bow_height = max(2, int(size * PlayerSettings.BOW_HEIGHT_RATIO))
+        bow_gap = max(1, int(size * PlayerSettings.BOW_GAP_RATIO))
+        bow_offset_y = bow_height + bow_gap
+    else:
+        bow_half_width = 0
+        bow_height = 0
+        bow_gap = 0
+        bow_offset_y = 0
+
+    # Canvas is expanded to accommodate the drop shadow in the bottom-right
+    # and (when present) the bow rising above the body's top apex.
+    image = pygame.Surface(
+        (total_width + shadow, body_height + shadow + bow_offset_y),
+        pygame.SRCALPHA,
+    )
 
     tail_points = [
-        (0, 0),
-        (0, body_height),
-        (tail_width, center_y),
+        (0, bow_offset_y),
+        (0, bow_offset_y + body_height),
+        (tail_width, bow_offset_y + center_y),
     ]
     body_points = [
-        (tail_width, center_y),
-        (tail_width + size // 2, 0),
-        (total_width, center_y),
-        (tail_width + size // 2, body_height),
+        (tail_width, bow_offset_y + center_y),
+        (tail_width + size // 2, bow_offset_y),
+        (total_width, bow_offset_y + center_y),
+        (tail_width + size // 2, bow_offset_y + body_height),
     ]
 
     # Drop shadow drawn first so the fish body renders cleanly on top.
@@ -56,8 +81,10 @@ def build_fish_surface(
         # via an alpha mask so transparent corners stay transparent.
         mask_surf = pygame.Surface((total_width, body_height), pygame.SRCALPHA)
         mask_surf.fill((0, 0, 0, 0))
-        pygame.draw.polygon(mask_surf, (255, 255, 255, 255), tail_points)
-        pygame.draw.polygon(mask_surf, (255, 255, 255, 255), body_points)
+        mask_tail = [(x, y - bow_offset_y) for x, y in tail_points]
+        mask_body = [(x, y - bow_offset_y) for x, y in body_points]
+        pygame.draw.polygon(mask_surf, (255, 255, 255, 255), mask_tail)
+        pygame.draw.polygon(mask_surf, (255, 255, 255, 255), mask_body)
 
         grad_surf = pygame.Surface((total_width, body_height), pygame.SRCALPHA)
         for y in range(body_height):
@@ -69,7 +96,7 @@ def build_fish_surface(
 
         # Multiply alpha channels so gradient is transparent outside fish shape.
         grad_surf.blit(mask_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        image.blit(grad_surf, (0, 0))
+        image.blit(grad_surf, (0, bow_offset_y))
     else:
         pygame.draw.polygon(image, color, tail_points)
         pygame.draw.polygon(image, color, body_points)
@@ -80,8 +107,33 @@ def build_fish_surface(
     # Place eye halfway between the body's center and the nose.
     eye_center_x = int((diamond_center_x + nose_x) / 2)
     eye_x = min(total_width - eye_size, max(0, eye_center_x - eye_size // 2))
-    eye_y = max(0, center_y - eye_size // 2)
+    eye_y = max(0, bow_offset_y + center_y - eye_size // 2)
     pygame.draw.rect(image, ColorSettings.BLACK, (eye_x, eye_y, eye_size, eye_size))
+
+    if bow:
+        # Two mirrored triangles meeting at a central apex — a stylized bow tie
+        # sitting just above the body's top point. Drawn last so it renders on
+        # top of the body shadow, with its own shadow underneath for depth.
+        bow_cx = tail_width + size // 2
+        bow_top = 0
+        bow_bottom = bow_height
+        bow_mid = bow_height // 2
+        left_triangle = [
+            (bow_cx - bow_half_width, bow_top),
+            (bow_cx - bow_half_width, bow_bottom),
+            (bow_cx, bow_mid),
+        ]
+        right_triangle = [
+            (bow_cx + bow_half_width, bow_top),
+            (bow_cx + bow_half_width, bow_bottom),
+            (bow_cx, bow_mid),
+        ]
+        bow_shadow_left = [(x + shadow, y + shadow) for x, y in left_triangle]
+        bow_shadow_right = [(x + shadow, y + shadow) for x, y in right_triangle]
+        pygame.draw.polygon(image, (0, 0, 0, 100), bow_shadow_left)
+        pygame.draw.polygon(image, (0, 0, 0, 100), bow_shadow_right)
+        pygame.draw.polygon(image, PlayerSettings.BOW_COLOR, left_triangle)
+        pygame.draw.polygon(image, PlayerSettings.BOW_COLOR, right_triangle)
 
     return image, body_height
 
@@ -102,7 +154,10 @@ class Player(pygame.sprite.Sprite):
         # would round that to 0 each time, making growth invisible for small fish).
         self.size = float(PlayerSettings.SIZE[0])
         self.base_image, _ = build_fish_surface(
-            int(self.size), PlayerSettings.COLOR_TOP, PlayerSettings.COLOR_BOTTOM
+            int(self.size),
+            PlayerSettings.COLOR_TOP,
+            PlayerSettings.COLOR_BOTTOM,
+            bow=True,
         )
         self.facing_direction = 1
         self.image = self.base_image
@@ -293,7 +348,10 @@ class Player(pygame.sprite.Sprite):
         self.size = max(1.0, self.size + growth_amount)
         center = self.rect.center
         self.base_image, _ = build_fish_surface(
-            int(self.size), PlayerSettings.COLOR_TOP, PlayerSettings.COLOR_BOTTOM
+            int(self.size),
+            PlayerSettings.COLOR_TOP,
+            PlayerSettings.COLOR_BOTTOM,
+            bow=True,
         )
         self.rect = self.base_image.get_rect(center=center)
         self._set_facing_direction(self.facing_direction, force=True)

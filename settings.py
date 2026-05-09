@@ -37,7 +37,7 @@ class ScreenSettings:
     FPS = 60
     CRT_ALPHA_RANGE = (75, 90)
     CRT_SCANLINE_HEIGHT = 3
-    TITLE = "Fishy"
+    TITLE = "Ms. Fishy"
 
 
 class UiSettings:
@@ -118,6 +118,23 @@ class PlayerSettings:
     COLOR_BOTTOM = (255, 130, 0)       # warm orange — belly (bottom of body)
     # Fraction of the eaten fish's size added to the player on each eat.
     PLAYER_GROWTH_COEFFICIENT = 0.05
+
+    # ------------------------------------------------------------------
+    # MS. FISHY BOW
+    # ------------------------------------------------------------------
+    # The player wears a small pink bow above the body's top apex — two
+    # mirrored triangles (▷◁) meeting at a central point, scaled relative
+    # to fish size so the bow grows with the fish.
+
+    # Total bow width as a fraction of fish size (sum of both triangles).
+    BOW_WIDTH_RATIO = 0.55
+    # Bow vertical extent as a fraction of fish size.
+    BOW_HEIGHT_RATIO = 0.40
+    # Vertical gap between the bow's bottom edge and the body's top apex,
+    # as a fraction of fish size. Keeps the bow visually "floating" above.
+    BOW_GAP_RATIO = 0.15
+    # Bow color in RGB 0-255 — hot pink to read clearly against the ocean.
+    BOW_COLOR = (255, 105, 180)
 
 class FishSettings:
     """Settings related to the fish enemies."""

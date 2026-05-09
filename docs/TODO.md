@@ -1,4 +1,4 @@
-# Fishy — Roadmap & TODO
+# Ms. Fishy — Roadmap & TODO
 
 Move completed items from `[ ]` to `[x]`. Do not delete entries.
 
@@ -6,6 +6,7 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 
 ## Completed
 
+- [x] **Ms. Fishy rebrand** — renamed game from *Fishy* to *Ms. Fishy* (à la Ms. Pac-Man) to match the cute voice samples used for the gulp/scream SFX. Player fish now wears a pink bow above the body apex.
 - [x] `GameManager` frame loop (events → update → render → flip).
 - [x] Keyboard and controller input routing.
 - [x] `F11` / `BACK` fullscreen toggle.
@@ -58,7 +59,7 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 - [ ] **Enemy fish color variety** — randomize or tier fish colors so threat level is readable at a glance.
 - [x] **Fish eyes** — small black square centered vertically, positioned one-quarter of the way from the nose toward the start of the tail.
 - [ ] **Fish outlines / shadow** — add a black outline or drop-shadow to all fish (player and enemy) for legibility against the background.
-- [ ] **Player distinction** — give the player a unique color, gradient, or other visual marker so it stands out from enemy fish.
+- [x] **Player distinction** — give the player a unique color, gradient, or other visual marker so it stands out from enemy fish.
 - [ ] Replace fish polygon shapes with imported sprites once art is ready (multiple frames for swim cycle).
 - [ ] Scrolling ocean background or parallax layers.
 - [ ] Particle effect when the player eats a fish (splash, bubbles).
