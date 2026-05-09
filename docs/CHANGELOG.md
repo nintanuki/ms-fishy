@@ -474,3 +474,85 @@ template below, with one `**File:** ... **Why:** ...` block per file touched.
     releasing the key — both just bled off momentum at roughly the same rate.
     Counter-acceleration lets the player noticeably brake and reverse faster.
 **Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+## 2026-05-09 — Controller pause support; keyboard/controller parity rule
+
+**File:** main.py
+**Lines (at time of edit):** ~187-200 (_handle_joybuttondown, modified)
+**Before:**
+    def _handle_joybuttondown(self, event) -> None:
+        if self.quit_combo_pressed():
+            self.close_game()
+        if event.button == InputSettings.JOY_BUTTON_BACK:
+            pygame.display.toggle_fullscreen()
+            self.full_screen = not self.full_screen
+**After:**
+    def _handle_joybuttondown(self, event) -> None:
+        if self.quit_combo_pressed():
+            self.close_game()
+        if event.button == InputSettings.JOY_BUTTON_BACK:
+            pygame.display.toggle_fullscreen()
+            self.full_screen = not self.full_screen
+        # START mirrors the Enter key: pause/resume/restart.
+        if event.button == InputSettings.JOY_BUTTON_START:
+            self._handle_enter_key()
+**Why:** Pressing START alone now calls `_handle_enter_key`, giving the controller
+    the same pause/resume/restart capability as the Enter key on the keyboard.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** §5 Input (modified)
+**Before:** No parity rule; §5 listed Enter only under KEYDOWN, START not mentioned.
+**After:** Added "Parity rule: every action available on the keyboard must also be
+    reachable on the controller." Updated KEYDOWN and JOYBUTTONDOWN bullet points
+    to reflect Enter ↔ START parity explicitly.
+**Why:** Establishes and documents the keyboard/controller parity requirement so
+    future contributors maintain it.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** ~54, ~90 (modified)
+**Before:** `[ ] Controller needs to be able to pause too` unchecked; no Rules section.
+**After:** Item marked `[x]`; new Rules section added with the parity rule entry.
+**Why:** Reflect completed work and capture the new project rule.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+## 2026-05-09 — Extract _handle_pause_action; separate Enter and START handlers
+
+**File:** main.py
+**Lines (at time of edit):** ~169-210 (_handle_enter_key, _handle_joybuttondown, modified/new)
+**Before:**
+    `_handle_enter_key` contained all pause/resume/restart logic inline.
+    `_handle_joybuttondown` called `self._handle_enter_key()` from the START branch.
+**After:**
+    New `_handle_pause_action()` holds the shared pause/resume logic.
+    `_handle_enter_key()` calls `_handle_pause_action()` for playing/paused states and
+        handles restart separately for game_over.
+    New `_handle_start_button()` calls `_handle_pause_action()` only.
+    `_handle_joybuttondown` START branch calls `_handle_start_button()`.
+    Input handlers no longer call each other.
+**Why:** Input handlers should never delegate to each other; shared behaviour belongs
+    in a dedicated action method so each handler remains self-contained and doesn't
+    silently inherit unrelated side-effects of another.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** §5 Input (modified)
+**Before:** Parity rule only; handlers listed without design constraint.
+**After:** Added "Handler design rule" explaining that handlers must not call each other
+    and shared behaviour must be extracted into action methods.
+**Why:** Codify the design constraint so future contributors follow the same pattern.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+## 2026-05-09 — START button restarts from game-over screen
+
+**File:** main.py
+**Lines (at time of edit):** ~190-195 (_handle_start_button, modified)
+**Before:**
+    def _handle_start_button(self) -> None:
+        self._handle_pause_action()
+**After:**
+    def _handle_start_button(self) -> None:
+        if self.game_state == GameStateSettings.GAME_OVER:
+            self.restart_session()
+            return
+        self._handle_pause_action()
+**Why:** START should have full parity with Enter, including restart from game-over.
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)

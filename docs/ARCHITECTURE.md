@@ -72,12 +72,18 @@ A `pygame.sprite.Sprite` representing an enemy fish.
 
 ## 5. Input
 
+**Parity rule:** every action available on the keyboard must also be reachable on the controller. Keep this invariant when adding new input actions.
+
+**Handler design rule:** input handlers (`_handle_enter_key`, `_handle_start_button`, etc.) must never call each other. When two input sources share a behaviour, extract that behaviour into a dedicated action method (e.g. `_handle_pause_action`) and have each handler call the action method directly. This keeps every handler self-contained and prevents one input path from silently inheriting unrelated side-effects of another.
+
 Events are routed by type:
 
-- `KEYDOWN` → `_handle_keydown`. `Esc` quits; `F11` toggles fullscreen.
-- `JOYBUTTONDOWN` → `_handle_joybuttondown`. Quit-chord check; `BACK` toggles fullscreen.
+- `KEYDOWN` → `_handle_keydown`. `Esc` quits; `F11` toggles fullscreen; `Enter` → `_handle_enter_key` (pause/resume/restart).
+- `JOYBUTTONDOWN` → `_handle_joybuttondown`. Quit-chord check; `BACK` toggles fullscreen; `START` → `_handle_start_button` (pause/resume only).
 - `JOYHATMOTION` → `_handle_joyhatmotion` (stub).
 - `JOYAXISMOTION` → `_handle_joyaxismotion` (stub).
+
+Both `_handle_enter_key` and `_handle_start_button` delegate to `_handle_pause_action` for the shared pause/resume logic, and both handle restart from the game-over state independently.
 
 Player movement from the analog stick is polled directly in `Player.input()` each frame rather than being event-driven, so it is continuous.
 

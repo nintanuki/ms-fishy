@@ -39,7 +39,7 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 - [ ] Game should end when player width exceeds screen width. Display message about having destroyed the ecosystem.
 - [ ] Add enemies that can't be eaten, such as jellyfish (pure obstacle) or a shark that chases you (maybe at higher levels)
 - [ ] Different levels and maps with obstacles such as coral, etc.
-- [ ] Controller needs to be able to pause too, currently can only pause with enter button
+- [x] Controller needs to be able to pause too, currently can only pause with enter button
 
 ---
 
@@ -91,6 +91,12 @@ Move completed items from `[ ]` to `[x]`. Do not delete entries.
 - [x] `ScreenSettings.TITLE` is still `"Pygame Template"` — update to `"Fishy"`.
 - [ ] `FishManager.check_collisions` calls `pygame.quit()` / `sys.exit()` directly — should route through `GameManager.close_game()` or a scene transition instead.
 - [ ] `Player.input()` re-queries `pygame.joystick.Joystick(i)` every frame — should use the cached list from `GameManager`.
+
+---
+
+## Rules
+
+- [x] **Keyboard/controller parity** — anything doable on the keyboard must also be reachable on the controller. Documented in ARCHITECTURE.md § 5.
 
 ---
 

@@ -165,8 +165,8 @@ class GameManager:
             pygame.display.toggle_fullscreen()
             self.full_screen = not self.full_screen
 
-    def _handle_enter_key(self) -> None:
-        """Handle Enter as pause/resume/restart based on the current game state."""
+    def _handle_pause_action(self) -> None:
+        """Toggle pause on or off, including the audio side-effects for each transition."""
         if self.game_state == GameStateSettings.PLAYING:
             self.game_state = GameStateSettings.PAUSED
             self.audio.pause_music()
@@ -177,10 +177,23 @@ class GameManager:
             self.game_state = GameStateSettings.PLAYING
             self.audio.play_pause_out_sound()
             self.audio.resume_music()
+
+    def _handle_enter_key(self) -> None:
+        """Handle Enter: pause/resume while playing, or restart after game-over."""
+        if self.game_state in (GameStateSettings.PLAYING, GameStateSettings.PAUSED):
+            self._handle_pause_action()
             return
 
         if self.game_state == GameStateSettings.GAME_OVER:
             self.restart_session()
+
+    def _handle_start_button(self) -> None:
+        """Handle the controller START button: pause/resume, or restart after game-over."""
+        if self.game_state == GameStateSettings.GAME_OVER:
+            self.restart_session()
+            return
+
+        self._handle_pause_action()
 
     def _handle_joybuttondown(self, event) -> None:
         """Route one controller button press."""
@@ -193,6 +206,9 @@ class GameManager:
         if event.button == InputSettings.JOY_BUTTON_BACK:
             pygame.display.toggle_fullscreen()
             self.full_screen = not self.full_screen
+
+        if event.button == InputSettings.JOY_BUTTON_START:
+            self._handle_start_button()
 
     def _handle_joyhatmotion(self, event) -> None:
         """Route a D-pad direction event."""
