@@ -56,6 +56,10 @@ class Player(pygame.sprite.Sprite):
             y: Starting y-coordinate in pixels.
         """
         super().__init__()
+        # size is stored as float so fractional growth from PLAYER_GROWTH_COEFFICIENT
+        # accumulates across multiple fish eaten instead of being discarded by int()
+        # on every grow() call (e.g. eating a size-8 fish gives 0.8 px growth; int
+        # would round that to 0 each time, making growth invisible for small fish).
         self.size = float(PlayerSettings.SIZE[0])
         self.base_image, _ = build_fish_surface(int(self.size), PlayerSettings.COLOR)
         self.facing_direction = 1

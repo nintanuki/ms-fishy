@@ -49,7 +49,7 @@ A `pygame.sprite.Sprite` representing the player fish.
 - **Appearance:** Yellow polygon fish (diamond body + triangle tail) with a small black square eye; initial size `PlayerSettings.SIZE`.
 - **Movement:** Arrow keys and left analog stick. Speed is `PlayerSettings.SPEED` px/frame.
 - **Boundary:** `enforce_boundaries` clamps the rect to the screen edges each frame.
-- **Growth:** `FishManager.grow_player` calls `Player.grow(...)`, which rebuilds the fish polygon/mask at a larger size while preserving center position.
+- **Growth:** `FishManager.grow_player` calls `Player.grow(...)`, which rebuilds the fish polygon/mask at a larger size while preserving center position. `self.size` is stored as `float` so fractional growth (from `PLAYER_GROWTH_COEFFICIENT = 0.10`) accumulates across multiple fish eaten; the surface is always built from `int(self.size)`. Storing it as `int` would silently discard sub-pixel growth on every call.
 
 ### `Fish`
 
