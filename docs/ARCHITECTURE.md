@@ -53,6 +53,15 @@ A `Scene` is a discrete game state that handles its own events, updates, and ren
 
 ### Scenes in the game
 
+#### `TitleScene` (`ui/scenes/title_scene.py`)
+
+Launch scene shown on boot.
+
+- **On Enter:** Stop music.
+- **Update:** Spawns and advances background fish via `FishManager.update(player=None)`.
+- **Render:** Draws the ocean gradient, background fish, centered `MS. FISHY` title text, and `PRESS START TO PLAY` prompt.
+- **Handle Events:** Enter/START transitions to a fresh `PlayScene`.
+
 #### `PlayScene` (`ui/scenes/play_scene.py`)
 
 Handles active gameplay and pausing. Owns the player, all sprites, enemy sprites, and fish manager.
@@ -93,9 +102,10 @@ A `pygame.sprite.Sprite` representing an enemy fish.
 `FishManager` holds the `enemy_sprites` group and drives the fish lifecycle each frame:
 
 1. **Spawn timer:** increments each frame; fires `spawn_fish()` every `FishSettings.SPAWN_RATE` frames (≈1 s at 60 FPS) and resets.
-2. **Collision:** `check_collisions` calls `pygame.sprite.spritecollide` against the player.
-   - Player rect area > fish rect area → `grow_player`, fish is killed.
-  - Player rect area ≤ fish rect area → returns `True` to signal game-over.
+2. **Collision:** if `player is None`, collision is skipped and update returns `(False, 0)`.
+3. **Player collision path:** with a player, `check_collisions` calls `pygame.sprite.spritecollide` against the player.
+  - Player size > fish size → `grow_player`, fish is killed.
+  - Player size ≤ fish size → returns `True` to signal game-over.
 
 When game-over is detected, the scene transitions automatically to `GameOverScene`.
 
@@ -161,9 +171,11 @@ systems/
 ui/
   scenes/
     __init__.py
+    title_scene.py              Boot title scene with background fish.
     play_scene.py               Active gameplay + pause overlay.
     game_over_scene.py          Game-over screen.
 utils/
+  graphics.py                  Shared gradient background helper.
   text.py                       Centered text drawing helper.
 crt.py                          CRT post-processing overlay.
 main.py                         Entry point + GameManager.
@@ -174,8 +186,8 @@ docs/                           ARCHITECTURE, TODO, TESTING, CHANGELOG.
 
 ## 9. Current state-machine scope
 
-- Active scenes: `PlayScene` (PLAYING/PAUSED substates), `GameOverScene`.
-- Not yet implemented: `TitleScene`, `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 1.4-1.6 and Pass 2).
+- Active scenes: `TitleScene`, `PlayScene` (PLAYING/PAUSED substates), `GameOverScene`.
+- Not yet implemented: `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 2).
 
 ## 10. Audio (`systems/audio_manager.py`)
 
@@ -220,7 +232,7 @@ describes the `AudioSettings` contract the manager expects.
 
 ## 11. Extension points
 
-- **More scenes:** add `TitleScene`, `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 1.4-1.6 and Pass 2).
+- **More scenes:** add `InitialsEntryScene`, `LeaderboardScene` (planned for Pass 2).
 - **Score / HUD:** add a score counter and HUD widget to `PlayScene`; draw it after sprites but before the CRT pass.
 - **Sprite art:** replace the `pygame.Surface` placeholders in `Player.__init__` and `Fish.__init__` with loaded images.
 

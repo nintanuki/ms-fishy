@@ -18,7 +18,7 @@ class AudioManager:
     # ------------------------------------------------------------------
 
     def __init__(self):
-        """Load every registered sound effect and start background music."""
+        """Load every registered sound effect and initialize music state."""
         self.sounds: dict[str, pygame.mixer.Sound] = {}
         for name, path in AudioSettings.SOUND_EFFECTS.items():
             sound = self._load_sound(path)
@@ -30,7 +30,7 @@ class AudioManager:
         self._last_music_track: str | None = None
         self._music_is_paused = False
 
-        self.play_random_music()
+        # Music starts when gameplay enters PlayScene.
 
     def _load_sound(self, path: str) -> pygame.mixer.Sound | None:
         """Load one sound from disk; return None if the asset or mixer is missing.

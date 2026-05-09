@@ -15,11 +15,12 @@ class FishManager:
         self.sprite_group = sprite_group
         self.spawn_timer = 0
 
-    def update(self, player):
+    def update(self, player=None):
         """Advance fish systems by one frame.
 
         Args:
-            player: The player fish sprite used for collision checks.
+            player: The player fish sprite used for collision checks, or None
+                to run spawn/movement without collisions.
 
         Returns:
             tuple[bool, int]: (game_over, fish_eaten) — True when the player
@@ -29,6 +30,9 @@ class FishManager:
         if self.spawn_timer >= FishSettings.SPAWN_RATE:
             self.spawn_fish()
             self.spawn_timer = 0
+
+        if player is None:
+            return False, 0
 
         return self.check_collisions(player)
 

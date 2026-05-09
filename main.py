@@ -45,8 +45,8 @@ class GameManager:
 
         # Scene management
         self.scenes = SceneManager()
-        from ui.scenes.play_scene import PlayScene
-        self.scenes.change_to(PlayScene(self))
+        from ui.scenes.title_scene import TitleScene
+        self.scenes.change_to(TitleScene(self))
 
     def _initialize_audio_mixer(self) -> None:
         """Initialize pygame's mixer early so music and SFX are available."""

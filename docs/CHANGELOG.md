@@ -442,6 +442,54 @@ doing the actual implementation.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
 
+---
+
+## 2026-05-09T19:55:00-04:00 — title-only UI + gameplay-only background music
+
+**File:** ui/scenes/title_scene.py
+**Lines (at time of edit):** `on_enter`, removed `_high_score_text`, `render`
+**Before:** Title scene resumed music on enter and rendered a centered high-score fallback line (`HI: -----`) below the start prompt.
+**After:** Title scene now stops music on enter and renders only `MS. FISHY` plus `PRESS START TO PLAY`.
+**Why:** User requested a minimal title screen and no background music outside gameplay.
+
+**File:** systems/audio_manager.py
+**Lines (at time of edit):** `__init__` docstring/body tail
+**Before:** `AudioManager` started background music during initialization.
+**After:** `AudioManager` only initializes audio state; music now starts when gameplay enters `PlayScene`.
+**Why:** Ensures background music plays during gameplay only.
+
+**File:** settings.py
+**Lines (at time of edit):** `UiSettings` constants
+**Before:** `HIGH_SCORE_LABEL` remained in settings for title-screen fallback text.
+**After:** Removed `HIGH_SCORE_LABEL` because the title screen no longer renders a high-score line.
+**Why:** Keeps settings aligned with current UI behavior and avoids dead constants.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** `TitleScene` scene description bullets
+**Before:** Stated that title scene resumed music and rendered high-score text.
+**After:** Updated to reflect silent title behavior and title+prompt-only layout.
+**Why:** Keeps architecture docs in sync with code.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T19:35:00-04:00 — title centered + smaller start prompt constants
+
+**File:** settings.py
+**Lines (at time of edit):** `UiSettings` constants block
+**Before:** Title screen used `TITLE_FONT_SIZE` and `OVERLAY_FONT_SIZE`, with no dedicated constants for prompt size or title/prompt vertical anchors.
+**After:** Added `START_PROMPT_FONT_SIZE`, `TITLE_CENTER_Y_RATIO`, and `START_PROMPT_CENTER_Y_RATIO`.
+**Why:** Makes title-screen layout and CTA size tunable from settings instead of hardcoding values in scene code.
+
+**File:** ui/scenes/title_scene.py
+**Lines (at time of edit):** `__init__` font setup + `render` text placement
+**Before:** Prompt used `OVERLAY_FONT_SIZE`; title and prompt Y positions were hardcoded ratios in the render call.
+**After:** Prompt now uses dedicated `prompt_font` from `UiSettings.START_PROMPT_FONT_SIZE`, and text placement uses `UiSettings.TITLE_CENTER_Y_RATIO` / `UiSettings.START_PROMPT_CENTER_Y_RATIO`.
+**Why:** Centers the title via settings-driven anchor and makes `PRESS START TO PLAY` visibly smaller, as requested.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
 **File:** systems/fish_manager.py
 **Lines (at time of edit):** (new file)
 **After:** `FishManager` with `spawn_fish`, `check_collisions` (eat smaller fish → grow player; eaten by larger fish → exit), and `grow_player`.
@@ -1157,5 +1205,57 @@ doing the actual implementation.
 **After:**
     - [x] Create [utils/text.py](../utils/text.py) with one function:
 **Why:** Marks roadmap task 1.2 complete after implementing and wiring the helper.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-09T19:20:00-04:00 — pass 1.4 title scene with background fish
+
+**File:** utils/graphics.py
+**Lines (at time of edit):** (new file)
+**After:** Added `build_gradient_surface(width, height, color_top, color_bottom)` as a shared helper.
+**Why:** Title and play scenes both need the same ocean gradient; this removes duplicate rendering logic.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** imports + removed local helper block
+**Before:** `build_gradient_surface` was defined inside `play_scene.py`.
+**After:** Scene imports `build_gradient_surface` from `utils/graphics.py`.
+**Why:** Shares one canonical gradient helper across scenes.
+
+**File:** ui/scenes/title_scene.py
+**Lines (at time of edit):** (new file)
+**After:** Added `TitleScene` with gradient background, background fish via `FishManager`, centered title/prompt text, high-score line fallback (`HI: -----`), and Enter/START transition to a fresh `PlayScene`.
+**Why:** Implements TODO Pass 1 item 1.4 title-screen behavior.
+
+**File:** systems/fish_manager.py
+**Lines (at time of edit):** `update` signature/body
+**Before:** `update` required a player and always ran collision checks.
+**After:** `update(player=None)` now skips collisions and returns `(False, 0)` when no player is provided.
+**Why:** Lets `TitleScene` reuse fish spawning/movement without gameplay collisions.
+
+**File:** settings.py
+**Lines (at time of edit):** `UiSettings` constants
+**Before:** No title text/prompt/high-score label or title font size constants.
+**After:** Added `TITLE_TEXT`, `START_PROMPT_TEXT`, `HIGH_SCORE_LABEL`, and `TITLE_FONT_SIZE`.
+**Why:** Moves title-scene UI strings and sizing into settings per architecture rules.
+
+**File:** main.py
+**Lines (at time of edit):** scene bootstrap in `GameManager.__init__`
+**Before:** Boot scene was `PlayScene`.
+**After:** Boot scene is now `TitleScene`.
+**Why:** Game now launches to title as required by Pass 1.4.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** scene descriptions, fish-manager section, source tree, state-machine scope, extension points
+**Before:** Document still listed `TitleScene` as not implemented and described fish collisions as always active.
+**After:** Documented `TitleScene` behavior, optional-collision fish updates, new `utils/graphics.py`, and updated active/not-yet-implemented scene list.
+**Why:** Keeps architecture docs aligned with code.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** Pass 1 item 1.4 checkbox
+**Before:** `- [ ] Create [ui/scenes/title_scene.py](../ui/scenes/title_scene.py) ...`
+**After:** `- [x] Create [ui/scenes/title_scene.py](../ui/scenes/title_scene.py) ...`
+**Why:** Marks the next roadmap task as completed.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)

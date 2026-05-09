@@ -106,7 +106,7 @@ Replace the string-based `game_state` with first-class `Scene` objects.
 
 ### 1.4 `TitleScene`
 
-- [ ] Create [ui/scenes/title_scene.py](../ui/scenes/title_scene.py) (create the `ui/scenes/` package as needed with an `__init__.py`).
+- [x] Create [ui/scenes/title_scene.py](../ui/scenes/title_scene.py) (create the `ui/scenes/` package as needed with an `__init__.py`).
 - Visuals:
   - Same ocean gradient background as the play scene. Reuse the `build_gradient_surface` helper — move it to `utils/graphics.py` if needed by both scenes.
   - Title text **"MS. FISHY"** centered horizontally, vertically positioned at 35% screen height, rendered with `Pixeled.ttf` at a large size (add `UiSettings.TITLE_FONT_SIZE = 96` to [settings.py](../settings.py)).
