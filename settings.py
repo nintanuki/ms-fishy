@@ -256,7 +256,7 @@ class AudioSettings:
     # Background music pool; one is chosen at random each time music starts,
     # avoiding back-to-back repeats of the same track.
     MUSIC_TRACKS = [
-        os.path.join(AssetPaths.MUSIC_DIR, '8bit-aquarium.mp3'),
+        os.path.join(AssetPaths.MUSIC_DIR, '8bit-aquarium.ogg'),
     ]
 
 class DebugSettings:
