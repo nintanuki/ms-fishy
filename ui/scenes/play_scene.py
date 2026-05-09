@@ -25,11 +25,12 @@ class PlayScene(Scene):
     ACTIVE = "active"
     PAUSED = "paused"
 
-    def __init__(self, game):
+    def __init__(self, game, play_intro_splash: bool = False):
         """Initialize the play scene with a fresh player and fish manager.
         
         Args:
             game: The GameManager instance that owns this scene.
+            play_intro_splash: Whether to play splash SFX when drop-in settles.
         """
         super().__init__(game)
         self._create_gameplay_entities()
@@ -38,6 +39,8 @@ class PlayScene(Scene):
             ColorSettings.BG_COLOR_TOP, ColorSettings.BG_COLOR_BOTTOM,
         )
         self._state = self.DROPPING_IN
+        self._play_intro_splash = play_intro_splash
+        self._drop_in_splash_played = False
 
     def _create_gameplay_entities(self) -> None:
         """Build player, enemy container, and fish manager for one session."""
@@ -50,12 +53,12 @@ class PlayScene(Scene):
     def on_enter(self) -> None:
         """Called when entering this scene from another scene."""
         self._state = self.DROPPING_IN
+        self._drop_in_splash_played = False
         self.player.rect.center = (ScreenSettings.WIDTH // 2, -self.player.rect.height)
         self.player._pos_x = float(self.player.rect.x)
         self.player._pos_y = float(self.player.rect.y)
         self.player.velocity_x = 0.0
         self.player.velocity_y = PlayerSettings.DROP_IN_VELOCITY
-        self.game.audio.resume_music()
 
     def on_exit(self) -> None:
         """Called when leaving this scene."""
@@ -78,6 +81,7 @@ class PlayScene(Scene):
         """Advance the one-time player drop-in animation without reading input."""
         target_y = ScreenSettings.HEIGHT // 2
         center_tolerance = 4
+        previous_bottom = self.player.rect.bottom
         delta_y = target_y - self.player.rect.centery
 
         if abs(delta_y) <= center_tolerance:
@@ -108,6 +112,16 @@ class PlayScene(Scene):
         self.player._pos_y += self.player.velocity_y
         self.player.rect.y = int(self.player._pos_y)
 
+        # Fire splash exactly when the player first enters the visible screen.
+        if (
+            self._play_intro_splash
+            and not self._drop_in_splash_played
+            and previous_bottom < 0
+            and self.player.rect.bottom >= 0
+        ):
+            self.game.audio.play("splash")
+            self._drop_in_splash_played = True
+
         # Keep the drop centered horizontally and keep accumulators in sync.
         self.player.rect.centerx = ScreenSettings.WIDTH // 2
         self.player._pos_x = float(self.player.rect.x)
@@ -120,6 +134,7 @@ class PlayScene(Scene):
             self.player._pos_x = float(self.player.rect.x)
             self.player._pos_y = float(self.player.rect.y)
             self.player.velocity_y = 0.0
+            self.game.audio.resume_music()
             self._state = self.ACTIVE
 
     def handle_event(self, event: pygame.event.EventType) -> None:

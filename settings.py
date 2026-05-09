@@ -210,6 +210,7 @@ class AudioSettings:
     SFX_VOLUME_PAUSE_OUT = 0.5
     SFX_VOLUME_GULP = 1.0
     SFX_VOLUME_SCREAM = 1.0
+    SFX_VOLUME_SPLASH = 1.0
 
     # Logical sound name -> file path. The key is what gameplay code passes
     # to AudioManager.play(). Keep names short and game-action-oriented.
@@ -218,6 +219,7 @@ class AudioSettings:
         "pause_out": os.path.join(AssetPaths.SOUND_DIR, 'sfx_sounds_pause2_out.ogg'),
         "gulp":      os.path.join(AssetPaths.SOUND_DIR, 'gulp.ogg'),
         "scream":    os.path.join(AssetPaths.SOUND_DIR, 'game_over.ogg'),
+        "splash":    os.path.join(AssetPaths.SOUND_DIR, 'splash.ogg'),
     }
 
     # Per-sound toggle multipliers keyed by logical sound name.
@@ -226,6 +228,7 @@ class AudioSettings:
         "pause_out": SFX_VOLUME_PAUSE_OUT,
         "gulp": SFX_VOLUME_GULP,
         "scream": SFX_VOLUME_SCREAM,
+        "splash": SFX_VOLUME_SPLASH,
     }
 
     # Background music pool; one is chosen at random each time music starts,

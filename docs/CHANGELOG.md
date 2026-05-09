@@ -1293,3 +1293,100 @@ doing the actual implementation.
 **Why:** Documentation-truth update so smoke checks match current gameplay flow.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+## 2026-05-09T15:17:43.9273834-04:00 - title intro splash before gameplay music
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** 28-43, 53-62, 118-130 (modified)
+**Before:**
+    def __init__(self, game):
+        ...
+        self._state = self.DROPPING_IN
+
+    def on_enter(self) -> None:
+        ...
+        self.player.velocity_y = PlayerSettings.DROP_IN_VELOCITY
+        self.game.audio.resume_music()
+
+    # on drop-in settle
+    self.player.velocity_y = 0.0
+    self._state = self.ACTIVE
+**After:**
+    def __init__(self, game, play_intro_splash: bool = False):
+        ...
+        self._state = self.DROPPING_IN
+        self._play_intro_splash = play_intro_splash
+        self._drop_in_splash_played = False
+
+    def on_enter(self) -> None:
+        ...
+        self._drop_in_splash_played = False
+        self.player.velocity_y = PlayerSettings.DROP_IN_VELOCITY
+
+    # on drop-in settle
+    self.player.velocity_y = 0.0
+    if self._play_intro_splash and not self._drop_in_splash_played:
+        self.game.audio.play("splash")
+        self._drop_in_splash_played = True
+    self.game.audio.resume_music()
+    self._state = self.ACTIVE
+**Why:** Ensures the title-start drop-in can fire a one-shot splash cue and that gameplay music starts only after the drop-in has settled.
+
+**File:** ui/scenes/title_scene.py
+**Lines (at time of edit):** 49-52 (modified)
+**Before:**
+    self.game.scenes.change_to(PlayScene(self.game))
+**After:**
+    self.game.scenes.change_to(PlayScene(self.game, play_intro_splash=True))
+**Why:** Limits the splash intro cue to the title -> play transition.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 63, 69, 73 (modified)
+**Before:**
+    TitleScene enter/start bullet only mentioned transitioning to PlayScene.
+    PlayScene on-enter bullet said music resumes on enter.
+**After:**
+    TitleScene start bullet now notes the intro splash-enabled transition.
+    PlayScene on-enter/update bullets now document deferred music start and the splash-before-music behavior when drop-in settles.
+**Why:** Keeps architecture docs aligned with runtime behavior.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** 30-41 (modified)
+**Before:**
+    Gameplay checklist covered drop-in settle before fish spawn, but had no audio ordering assertion.
+**After:**
+    Added checklist item verifying splash plays at title-start drop-in settle before gameplay music.
+**Why:** Adds a direct smoke check for the requested behavior.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+## 2026-05-09T15:21:25.2946407-04:00 - move intro splash to top-edge entry moment
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** 84, 115-123, 129-138 (modified)
+**Before:**
+    Splash triggered when drop-in finished settling at center.
+**After:**
+    Splash now triggers during drop-in when the player first crosses from off-screen top into visible space:
+    - capture `previous_bottom = self.player.rect.bottom`
+    - after Y update, if `previous_bottom < 0` and `self.player.rect.bottom >= 0`, play `splash` once.
+    Music start remains at drop-in settle (`resume_music()` in settle branch).
+**Why:** User requested the cue to happen immediately when the player appears from the top, not at the end of the intro drift.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** PlayScene update bullets (modified)
+**Before:**
+    Documented splash firing on drop-in settle.
+**After:**
+    Documents splash firing at first visible top-edge entry and music starting on settle.
+**Why:** Keep architecture docs aligned with updated runtime behavior.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** Gameplay item 11 (modified)
+**Before:**
+    Splash assertion was tied to drop-in settle.
+**After:**
+    Splash assertion now verifies trigger at first top-edge appearance before gameplay music.
+**Why:** Smoke test now checks the corrected timing requirement.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)

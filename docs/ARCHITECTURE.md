@@ -60,16 +60,18 @@ Launch scene shown on boot.
 - **On Enter:** Stop music.
 - **Update:** Spawns and advances background fish via `FishManager.update(player=None)`.
 - **Render:** Draws the ocean gradient, background fish, centered `MS. FISHY` title text, and `PRESS START TO PLAY` prompt.
-- **Handle Events:** Enter/START transitions to a fresh `PlayScene`.
+- **Handle Events:** Enter/START transitions to a fresh `PlayScene` and enables the title-intro splash cue.
 
 #### `PlayScene` (`ui/scenes/play_scene.py`)
 
 Handles active gameplay and pausing. Owns the player, all sprites, enemy sprites, and fish manager.
 
-- **On Enter:** Resume music, set local substate to `DROPPING_IN`, place the player above the screen, and seed downward velocity from `PlayerSettings.DROP_IN_VELOCITY`.
+- **On Enter:** Set local substate to `DROPPING_IN`, place the player above the screen, and seed downward velocity from `PlayerSettings.DROP_IN_VELOCITY`. Music is intentionally deferred until drop-in completes.
 - **Handle Events:** Enter/START toggles pause only when active (pause/resume SFX, music pause/resume); global input is not forwarded here.
 - **Update:**
   - `DROPPING_IN`: advances one-time auto-pilot motion using the same acceleration/counter-acceleration/drag model as player movement, without reading input and without spawning fish.
+  - During drop-in: if title-started, play one-shot `splash` SFX exactly when the player first crosses into the visible screen from the top.
+  - On drop-in settle: start/resume gameplay music and switch to `ACTIVE`.
   - `ACTIVE`: advances sprites and fish manager; checks for game-over and transitions to GameOverScene if needed.
   - `PAUSED`: no world updates.
 - **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. `PAUSED` draws black background + centered pause text.

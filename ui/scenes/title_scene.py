@@ -49,7 +49,7 @@ class TitleScene(Scene):
     def _start_game_action(self) -> None:
         """Transition from title to a fresh gameplay session."""
         from ui.scenes.play_scene import PlayScene
-        self.game.scenes.change_to(PlayScene(self.game))
+        self.game.scenes.change_to(PlayScene(self.game, play_intro_splash=True))
 
     def handle_event(self, event: pygame.event.EventType) -> None:
         """Handle title-scene input for game start.
