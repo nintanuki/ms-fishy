@@ -2107,3 +2107,44 @@ doing the actual implementation.
 **Why:** Guarantees equal spacing between row 1->2 and 2->3 while centering the whole trio vertically.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+## 2026-05-10T10:38:00-04:00 — fix fish sticking at left screen edge
+
+**File:** core/sprites.py
+**Lines (at time of edit):** 445-452 (modified)
+**Before:**
+    def update(self):
+        """Advance enemy fish position and remove it once it clears the screen."""
+        self.rect.x += self.speed * self.direction
+
+        # Kill if off-screen
+        if self.rect.right < -50 or self.rect.left > ScreenSettings.WIDTH + 50:
+            self.kill()
+**After:**
+    self._pos_x = float(self.rect.x)
+
+    def update(self):
+        """Advance enemy fish position and remove it once it clears the screen."""
+        self._pos_x += self.speed * self.direction
+        self.rect.x = int(self._pos_x)
+
+        # Kill if off-screen
+        if self.rect.right < -50 or self.rect.left > ScreenSettings.WIDTH + 50:
+            self.kill()
+**Why:** Fish speeds are floats, but `pygame.Rect` stores integers. Directly adding sub-pixel values to `rect.x` caused truncation artifacts that pinned right-moving fish at the left edge. A float accumulator preserves fractional movement and resolves the left-side sticking.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 137 (modified)
+**Before:**
+    - **Movement:** Constant horizontal speed in `[FishSettings.MIN_SPEED, FishSettings.MAX_SPEED]`. Self-destructs (`kill()`) once it clears the opposite edge by 50 px.
+**After:**
+    - **Movement:** Constant horizontal speed in `[FishSettings.MIN_SPEED, FishSettings.MAX_SPEED]`, integrated through a float x-position accumulator and then written to `rect.x` each frame so sub-pixel speeds move smoothly in both directions. Self-destructs (`kill()`) once it clears the opposite edge by 50 px.
+**Why:** Architecture docs must reflect the runtime movement model used by `Fish`.
+
+**File:** docs/CHANGELOG.md
+**Lines (at time of edit):** (appended)
+**After:**
+    Added this change-log entry.
+**Why:** Required append-only history update for this fix.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)

@@ -134,7 +134,7 @@ A `pygame.sprite.Sprite` representing an enemy fish.
 
 - **Appearance:** Solid-color polygon fish (random color from `ColorSettings.FISH_PALETTE`, chosen at spawn) with a small black square eye of size `FishSettings.EYE_SIZE_RATIO * size` and a soft drop shadow. The palette is a curated set of retro hues chosen to contrast against the ocean gradient background.
 - **Spawn:** From off the left or right edge at a random vertical position. Direction is set to match the side it spawned from (left→right, right→left).
-- **Movement:** Constant horizontal speed in `[FishSettings.MIN_SPEED, FishSettings.MAX_SPEED]`. Self-destructs (`kill()`) once it clears the opposite edge by 50 px.
+- **Movement:** Constant horizontal speed in `[FishSettings.MIN_SPEED, FishSettings.MAX_SPEED]`, integrated through a float x-position accumulator and then written to `rect.x` each frame so sub-pixel speeds move smoothly in both directions. Self-destructs (`kill()`) once it clears the opposite edge by 50 px.
 
 ## 4. Fish manager (`systems/fish_manager.py`)
 
