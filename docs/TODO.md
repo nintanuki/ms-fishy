@@ -105,7 +105,7 @@ Within a pass, items are ordered low-to-high difficulty.
 
 - [x] `GameOverScene.on_enter` routes to `InitialsEntryScene` when qualifies, else `LeaderboardScene`.
 - [x] `Hud.draw` reads `game.leaderboard.top()[0]` for the HI center label.
-- [x] End-of-run messaging flow: cause text first (`YOU WERE EATEN BY A BIGGER FISH` or `YOU'VE EATEN ALL THE FISH!`), then `GAME OVER` on confirm, then leaderboard routing.
+- [x] End-of-run messaging flow: cause text first (`YOU WERE EATEN BY A BIGGER FISH` or `YOU'VE EATEN ALL THE FISH!`), then delayed stat tally, then leaderboard routing.
 - [x] Added victory end condition when player width exceeds screen width.
 - Note: `TitleScene` intentionally has no HI line per the title-screen lock rule in `copilot-instructions.md`.
 
@@ -115,11 +115,11 @@ Within a pass, items are ordered low-to-high difficulty.
 
 End game is not challenging when player reaches a certain size, and final scores will always be close to the same. Let's add other stats to thes core
 
-- [ ] Add a timer, test it so that it gets close to zero when the player gets to a size that they are unbeatable, this effectively treats the invincible stage as a bonus round. Seconds left on timer add to the score
-- [ ] # of fish adds to score
+- [x] Add a timer, test it so that it gets close to zero when the player gets to a size that they are unbeatable, this effectively treats the invincible stage as a bonus round. Seconds left on timer add to the score
+- [x] # of fish adds to score
 - [ ] eating multiple fish at a time adds to score.
-- [ ] player's final weight adds to score
-- [ ] Display all statistics at the end (# of fish eaten, player weight, time left, etc) and add to final score
+- [x] player's final weight adds to score
+- [x] Display all statistics at the end (# of fish eaten, player weight, time left, etc) and add to final score
 
 ---
 

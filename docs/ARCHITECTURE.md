@@ -90,10 +90,16 @@ Displays a two-step end-of-run flow before leaderboard routing.
   - Win path: `YOU'VE EATEN ALL THE FISH!`
   - Font size: `UiSettings.OUTCOME_MESSAGE_FONT_SIZE`.
   - Loss and starvation use red text.
-- **Phase 2 render:** Black background + centered `GAME OVER`.
-  - Font size: `UiSettings.OVERLAY_FONT_SIZE`.
-- **Input:** Enter / controller A / controller START advances phase; from phase 2 it routes onward.
-- **Routing:** If `leaderboard.qualifies(score.total)` → `InitialsEntryScene`; else → `LeaderboardScene`.
+- **Phase 2 render:** Black background + delayed stat tally reveal.
+  - Reveals one line every `UiSettings.TALLY_LINE_REVEAL_DELAY_MS`:
+    - `+ NUMBER OF FISH EATEN`
+    - `+ TOTAL WEIGHT EATEN`
+    - `+ MS. FISHY'S FINAL WEIGHT`
+    - `+ SECONDS LEFT ON THE TIMER`
+    - `= TOTAL SCORE!`
+  - Final total line is highlighted in yellow.
+- **Input:** Enter / controller A / controller START advances from phase 1 to phase 2. In phase 2, confirm routes onward only after all tally lines are visible.
+- **Routing:** Always routes to `LeaderboardScene` after tally confirmation.
 - **Data:** Receives both run `Score` and a run-ending `outcome` from `PlayScene`.
 
 ### `Score` (`core/score.py`)

@@ -32,7 +32,7 @@ class ColorSettings:
     BG_COLOR_TOP = SUMMER_SKY # sunlit aqua at the water surface
     BG_COLOR_BOTTOM = SAPPHIRE     # deep navy at the ocean floor
 
-    IN_GAME_HUD_TEXT = CANARY
+    IN_GAME_HUD_TEXT = WHITE
 
     BG_COLOR = DARK_TURQUOISE
 
@@ -82,12 +82,20 @@ class UiSettings:
 
     LEADERBOARD_ENTRIES_START_Y = 150  # First leaderboard row Y anchor.
 
-    # HUD top-left stack layout.
-    HUD_LINE_SPACING = 26            # Vertical gap in pixels between consecutive HUD rows.
+    # Game-over tally reveal cadence.
+    TALLY_LINE_REVEAL_DELAY_MS = 700  # Delay between each tally row reveal in milliseconds.
+    TALLY_LINE_START_Y_RATIO = 0.30   # Top anchor for the first tally row.
+    TALLY_LINE_ROW_GAP = 60           # Vertical spacing in pixels between tally rows.
+    TALLY_TOTAL_FONT_SIZE = 36        # Font size for the final TOTAL SCORE tally row.
+    TALLY_TOTAL_TOP_GAP = 24          # Extra vertical gap before the final TOTAL SCORE row.
+
+    # HUD layout.
+    HUD_LINE_SPACING = 26            # Vertical gap in pixels between consecutive detail HUD rows.
     HUD_BAR_WIDTH = 150              # Total width of the hunger bar in pixels.
     HUD_BAR_HEIGHT = 8               # Height of the hunger bar in pixels.
-    HUD_BAR_TOP_GAP = 4              # Pixel gap between the hunger timer text and the hunger bar.
     HUNGER_WARNING_SECONDS = 5       # Timer text (and future audio cue) turns red at or below this value.
+    HUD_COMPACT_LABEL = "HUNGER"     # Label shown beside the bar in compact (minimal) mode.
+    HUD_COMPACT_BAR_GAP = 8         # Horizontal gap in pixels between the compact label and bar.
 
 
 class GameStateSettings:

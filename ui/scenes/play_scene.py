@@ -77,6 +77,28 @@ class PlayScene(Scene):
         """Called when leaving this scene."""
         pass
 
+    def _get_hud_detail_align(self) -> str | None:
+        """Return 'left' or 'right' if the player is holding a shoulder button, else None.
+
+        L1 or L2 held → detail HUD anchored top-left.
+        R1 or R2 held → detail HUD anchored top-right.
+        Neither held  → compact hunger indicator (default).
+        """
+        for joy in self.game.connected_joysticks:
+            left_held = (
+                joy.get_button(InputSettings.JOY_BUTTON_L1)
+                or joy.get_axis(InputSettings.JOY_AXIS_L2) > InputSettings.JOY_TRIGGER_THRESHOLD
+            )
+            right_held = (
+                joy.get_button(InputSettings.JOY_BUTTON_R1)
+                or joy.get_axis(InputSettings.JOY_AXIS_R2) > InputSettings.JOY_TRIGGER_THRESHOLD
+            )
+            if left_held:
+                return "left"
+            if right_held:
+                return "right"
+        return None
+
     def _handle_pause_action(self) -> None:
         """Toggle pause on or off, including the audio side-effects for each transition."""
         if self._state == self.ACTIVE:
@@ -235,7 +257,7 @@ class PlayScene(Scene):
             self.all_sprites.draw(screen)
             self.enemy_sprites.draw(screen)
             if self._state == self.ACTIVE:
-                self.hud.draw(screen, self._remaining_time_seconds)
+                self.hud.draw(screen, self._remaining_time_seconds, self._get_hud_detail_align())
         elif self._state == self.PAUSED:
             screen.fill(ColorSettings.BLACK)
             draw_centered_text(

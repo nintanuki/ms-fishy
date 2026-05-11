@@ -470,6 +470,72 @@ doing the actual implementation.
 
 ---
 
+## 2026-05-11T12:37:18-04:00 — centered outcome restored; centered left-justified tally block
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 148-187 (modified)
+**Before:**
+    Outcome text used a left-edge anchor (`midleft`) and appeared left-aligned.
+    Tally lines also used a left-edge anchor tied to generic HUD padding.
+    Final score row shared the same vertical rhythm as the tally rows.
+**After:**
+    Outcome text now uses a true centered anchor (`center=(WIDTH//2, HEIGHT//2)`).
+    Tally lines are rendered into a centered block with a shared computed left
+    edge (`block_left_x`), so each line is left-justified while the whole
+    group remains centered on-screen.
+    Added an explicit extra gap before the final TOTAL SCORE row.
+**Why:** User requested a centered composition with left-justified tally text shape, while restoring centered outcome messaging and adding clearer separation before the final score.
+
+**File:** settings.py
+**Lines (at time of edit):** 87-90 (modified)
+**Before:**
+    TALLY_LINE_START_Y_RATIO = 0.34
+    (no dedicated extra-gap constant before total row)
+**After:**
+    TALLY_LINE_START_Y_RATIO = 0.30
+    TALLY_TOTAL_TOP_GAP = 24
+**Why:** Moves the tally block upward and adds tunable spacing between the stat lines and the final total line.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
+## 2026-05-11T12:33:19-04:00 — left-aligned tally text, non-padded values, and larger total row
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 17-187 (modified)
+**Before:**
+    from utils.text import draw_centered_text
+    ...
+    f"+ NUMBER OF FISH EATEN: ... ({fish_points:05d})"
+    ...
+    f"TOTAL SCORE = {self.score.total:05d}!"
+    ...
+    draw_centered_text(... center=(ScreenSettings.WIDTH // 2, ...))
+**After:**
+    (removed centered-text helper import from this scene)
+    ...
+    f"+ NUMBER OF FISH EATEN: ... ({fish_points})"
+    ...
+    f"TOTAL SCORE = {self.score.total}!"
+    ...
+    Outcome and tally lines are rendered via font surfaces with `midleft`
+    anchors using `UiSettings.HUD_PADDING` so all text is left-aligned.
+    Final total row uses `self._tally_total_font` for larger text.
+**Why:** Requested UI polish for the new tally scene: left alignment, no trailing zero padding in numeric output, and stronger visual emphasis on the final TOTAL SCORE line.
+
+**File:** settings.py
+**Lines (at time of edit):** 89 (modified)
+**Before:**
+    (no dedicated total-row font-size setting for game-over tally)
+**After:**
+    TALLY_TOTAL_FONT_SIZE = 36
+**Why:** Keeps the larger final-score row size configurable in settings and avoids hardcoded font-size values in scene code.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
 ## 2026-05-09T23:44:00-04:00 — outcome text colors for loss/win messaging
 
 **File:** settings.py
@@ -678,6 +744,99 @@ doing the actual implementation.
 **After:**
     CRT visibility checks are conditional on `DebugSettings.ENABLE_CRT`.
     Fullscreen CRT expectations are only asserted when the CRT toggle is enabled.
+
+---
+
+## 2026-05-11T12:30:14-04:00 — game-over stat tally reveal and direct leaderboard handoff
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 20-178 (modified)
+**Before:**
+    class GameOverScene(Scene):
+        """Two-step end-of-run scene before leaderboard routing.
+
+        Step 1 displays the outcome text (loss or victory). After confirm, step 2
+        displays GAME OVER. A second confirm routes to InitialsEntryScene or
+        LeaderboardScene based on leaderboard qualification.
+        """
+
+    def _advance_flow_action(self) -> None:
+        if self._phase == self._PHASE_OUTCOME_MESSAGE:
+            self._phase = self._PHASE_GAME_OVER_MESSAGE
+            return
+        self._route_to_post_game_scene()
+
+    def _route_to_post_game_scene(self) -> None:
+        if self.score is not None and self.game.leaderboard.qualifies(self.score.total):
+            from ui.scenes.initials_entry_scene import InitialsEntryScene
+            self.game.scenes.change_to(InitialsEntryScene(self.game, self.score))
+        else:
+            from ui.scenes.leaderboard_scene import LeaderboardScene
+            self.game.scenes.change_to(LeaderboardScene(self.game, self.score))
+**After:**
+    class GameOverScene(Scene):
+        """Outcome message then timed stat tally before leaderboard routing."""
+
+    def _advance_flow_action(self) -> None:
+        if self._phase == self._PHASE_OUTCOME_MESSAGE:
+            self._phase = self._PHASE_TALLY
+            self._tally_elapsed_ms = 0
+            return
+        if self._phase == self._PHASE_TALLY and self._all_tally_lines_visible():
+            self._route_to_post_game_scene()
+
+    def _tally_lines(self) -> list[str]:
+        return [
+            "+ NUMBER OF FISH EATEN: ...",
+            "+ TOTAL WEIGHT EATEN: ...",
+            "+ MS. FISHY'S FINAL WEIGHT: ...",
+            "+ SECONDS LEFT ON THE TIMER: ...",
+            "= TOTAL SCORE! ...",
+        ]
+
+    def _route_to_post_game_scene(self) -> None:
+        from ui.scenes.leaderboard_scene import LeaderboardScene
+        self.game.scenes.change_to(LeaderboardScene(self.game, self.score))
+**Why:** Implements requested end-of-run pacing: remove the standalone GAME OVER interstitial, reveal each stat line one-by-one, and only allow confirm-to-leaderboard after the tally is fully shown.
+
+**File:** settings.py
+**Lines (at time of edit):** 86-88 in `UiSettings` (modified)
+**Before:**
+    (no game-over tally reveal timing/layout constants)
+**After:**
+    TALLY_LINE_REVEAL_DELAY_MS = 700
+    TALLY_LINE_START_Y_RATIO = 0.34
+    TALLY_LINE_ROW_GAP = 60
+**Why:** Keeps reveal cadence and tally layout tunable from settings, avoiding magic numbers in scene code.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 85-102 (modified)
+**Before:**
+    GameOverScene phase 2 was documented as centered `GAME OVER` text,
+    with routing to InitialsEntryScene when leaderboard qualification passed.
+**After:**
+    GameOverScene phase 2 is documented as delayed stat tally reveal using
+    `UiSettings.TALLY_LINE_REVEAL_DELAY_MS`, with routing directly to
+    LeaderboardScene after tally confirmation.
+**Why:** Documentation truth update to match actual runtime flow.
+
+**File:** docs/TODO.md
+**Lines (at time of edit):** 108, 118-122 (modified)
+**Before:**
+    - [x] End-of-run messaging flow ... then `GAME OVER` on confirm, then leaderboard routing.
+    - [ ] Add a timer ... Seconds left on timer add to the score
+    - [ ] # of fish adds to score
+    - [ ] player's final weight adds to score
+    - [ ] Display all statistics at the end ... and add to final score
+**After:**
+    - [x] End-of-run messaging flow ... then delayed stat tally, then leaderboard routing.
+    - [x] Add a timer ... Seconds left on timer add to the score
+    - [x] # of fish adds to score
+    - [x] player's final weight adds to score
+    - [x] Display all statistics at the end ... and add to final score
+**Why:** Marks completed roadmap items and updates the completed messaging description to the new tally flow.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
 **Why:** The smoke checklist must reflect that CRT is now an optional debug setting rather than always-on behavior.
 
 **Editor:** GitHub Copilot (GPT-5.4)
