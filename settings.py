@@ -219,16 +219,18 @@ class TimerSettings:
     # Starting countdown time for each run, in seconds.
     STARTING_SECONDS = 30
 
-    # Base seconds added per pixel of fish width when the player eats it.
-    # Reduced by the diminishing-returns ratio when the eaten fish is smaller
-    # than the player.
-    SECONDS_PER_FISH_PIXEL = 0.5
+    # Seconds added to the timer when the player eats a fish exactly its own
+    # size (size ratio = 1.0).  Smaller fish yield proportionally less time
+    # via the diminishing-returns ratio, so the bonus is always relative —
+    # a huge player eating a huge peer gets the same seconds as a tiny player
+    # eating a tiny peer.
+    SECONDS_PER_EAT = 6
 
     # Minimum ratio applied to the time bonus when eating very small fish
     # relative to the player's current size.  Prevents a huge player from
-    # getting zero time from any fish: a value of 0.1 guarantees at least
-    # 10% of the base bonus regardless of the size gap.
-    TIMER_MIN_RATIO = 0.1
+    # getting zero time from any fish: a value of 0.05 guarantees at least
+    # 5% of SECONDS_PER_EAT regardless of the size gap.
+    TIMER_MIN_RATIO = 0.05
 
 
 class ScoreSettings:
@@ -248,7 +250,7 @@ class ScoreSettings:
     # Points awarded per pixel of the player's final body width at run end.
     FINAL_WEIGHT_FACTOR = 3
     # Points awarded per whole second remaining on the hunger timer at run end.
-    TIME_LEFT_BONUS = 20
+    TIME_LEFT_BONUS = 5
 
 
 class FontSettings:
@@ -328,7 +330,7 @@ class DebugSettings:
     # When False, the CRT overlay is skipped entirely. This is useful for
     # pybag/browser runs and quick testing where the overlay texture or effect
     # gets in the way.
-    ENABLE_CRT = False
+    ENABLE_CRT = True
 
     # When True, closing the game exits the main loop cleanly instead of
     # calling sys.exit(). This avoids browser-console "clean crash" noise in

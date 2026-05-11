@@ -74,7 +74,7 @@ Handles active gameplay and pausing. Owns the player, run `Score`, all sprites, 
   - During drop-in: if title-started, play one-shot `splash` SFX exactly when the player first crosses into the visible screen from the top.
   - On drop-in settle: start/resume gameplay music and switch to `ACTIVE`.
   - `ACTIVE`: runs a countdown from `TimerSettings.STARTING_SECONDS`; subtracts `1 / ScreenSettings.FPS` each frame, adds a time bonus when the player eats a fish, advances sprites and fish manager, records fish sizes from collision results into `Score`, and checks for game-over.
-  - **Time bonus with diminishing returns:** `fish.size × SECONDS_PER_FISH_PIXEL × max(TIMER_MIN_RATIO, fish.size / player.size)`. When the eaten fish is much smaller than the player the ratio approaches `TIMER_MIN_RATIO` (default 0.1), so only near-peer fish give meaningful time.
+  - **Time bonus with diminishing returns:** `max(TIMER_MIN_RATIO, fish.size / player.size) × SECONDS_PER_EAT`. The bonus depends only on the *relative* size of the eaten fish, not its absolute pixel width, so eating a peer-sized fish always adds `SECONDS_PER_EAT` seconds regardless of player scale. When the eaten fish is much smaller the ratio approaches `TIMER_MIN_RATIO` (default 0.05), guaranteeing a small but non-zero reward.
   - `ACTIVE` transitions to `GameOverScene(score=..., outcome=...)` when a larger fish hits the player or when the countdown reaches zero.
   - `ACTIVE` additionally treats `player.rect.width > ScreenSettings.WIDTH` as a win condition (`WIN_ATE_ALL_FISH`) and transitions to `GameOverScene` with a victory outcome.
   - `PAUSED`: no world updates.

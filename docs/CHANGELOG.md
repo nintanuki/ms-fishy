@@ -470,6 +470,46 @@ doing the actual implementation.
 
 ---
 
+## 2026-05-11T14:00:00-04:00 — ratio-based time bonus to fix trivial late-game hunger
+
+**File:** settings.py
+**Lines (at time of edit):** 222-231 (modified)
+**Before:**
+    # Base seconds added per pixel of fish width when the player eats it.
+    SECONDS_PER_FISH_PIXEL = 0.4
+    # Minimum ratio ... value of 0.1 ...
+    TIMER_MIN_RATIO = 0.05
+**After:**
+    # Seconds added for eating a fish exactly the player's own size.
+    SECONDS_PER_EAT = 6
+    # Minimum ratio ... value of 0.05 ...
+    TIMER_MIN_RATIO = 0.05
+**Why:** The old formula multiplied the absolute fish-size in pixels by SECONDS_PER_FISH_PIXEL, so a large player eating a large peer could gain 80+ seconds per eat, making the hunger meter trivial. The new constant is ratio-only: bonus = effective_ratio × SECONDS_PER_EAT. Eating a peer always gives the same seconds regardless of size, keeping the timer meaningful in the late game. Lowering TIMER_MIN_RATIO alone did not fix this because it only affects the floor for tiny fish, not the absolute-size explosion.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** 227-234 (modified)
+**Before:**
+    self._remaining_time_seconds += (
+        fish_size * TimerSettings.SECONDS_PER_FISH_PIXEL * effective_ratio
+    )
+**After:**
+    self._remaining_time_seconds += (
+        effective_ratio * TimerSettings.SECONDS_PER_EAT
+    )
+**Why:** Implements the ratio-only formula — absolute fish size no longer appears in the bonus calculation.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 77 (modified)
+**Before:**
+    Time bonus formula referenced SECONDS_PER_FISH_PIXEL and said TIMER_MIN_RATIO default was 0.1.
+**After:**
+    Updated to describe ratio-only formula and correct TIMER_MIN_RATIO default of 0.05.
+**Why:** Keep docs in sync with code.
+
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+---
+
 ## 2026-05-11T12:40:42-04:00 — prevent tally lines from shifting during reveal
 
 **File:** ui/scenes/game_over_scene.py

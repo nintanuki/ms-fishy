@@ -223,12 +223,16 @@ class PlayScene(Scene):
             self.score.add(fish_size)
             # Diminishing returns: eating fish much smaller than the player
             # gives proportionally less time.  The ratio is capped at 1.0 so
-            # eating a peer-sized fish always gives the full bonus, and floored
-            # at TIMER_MIN_RATIO so even tiny fish still give some time.
+            # eating a peer-sized fish always gives the full SECONDS_PER_EAT
+            # bonus, and floored at TIMER_MIN_RATIO so even tiny fish still
+            # give some time.  Crucially, the bonus does NOT scale with
+            # absolute fish size — only the ratio matters — so a huge player
+            # eating a huge peer earns the same seconds as a tiny player
+            # eating a tiny peer, keeping the late game challenging.
             size_ratio = min(1.0, fish_size / self.player.size)
             effective_ratio = max(TimerSettings.TIMER_MIN_RATIO, size_ratio)
             self._remaining_time_seconds += (
-                fish_size * TimerSettings.SECONDS_PER_FISH_PIXEL * effective_ratio
+                effective_ratio * TimerSettings.SECONDS_PER_EAT
             )
 
         if eaten_sizes:
