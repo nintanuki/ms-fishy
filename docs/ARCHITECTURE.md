@@ -73,10 +73,12 @@ Handles active gameplay and pausing. Owns the player, run `Score`, all sprites, 
   - `DROPPING_IN`: advances one-time auto-pilot motion using the same acceleration/counter-acceleration/drag model as player movement, without reading input and without spawning fish.
   - During drop-in: if title-started, play one-shot `splash` SFX exactly when the player first crosses into the visible screen from the top.
   - On drop-in settle: start/resume gameplay music and switch to `ACTIVE`.
-  - `ACTIVE`: advances sprites and fish manager; records fish sizes from collision results into `Score`; checks for game-over and transitions to `GameOverScene(score=...)` if needed.
+  - `ACTIVE`: runs a countdown from `TimerSettings.STARTING_SECONDS`; subtracts `1 / ScreenSettings.FPS` each frame, adds a time bonus when the player eats a fish, advances sprites and fish manager, records fish sizes from collision results into `Score`, and checks for game-over.
+  - **Time bonus with diminishing returns:** `fish.size × SECONDS_PER_FISH_PIXEL × max(TIMER_MIN_RATIO, fish.size / player.size)`. When the eaten fish is much smaller than the player the ratio approaches `TIMER_MIN_RATIO` (default 0.1), so only near-peer fish give meaningful time.
+  - `ACTIVE` transitions to `GameOverScene(score=..., outcome=...)` when a larger fish hits the player or when the countdown reaches zero.
   - `ACTIVE` additionally treats `player.rect.width > ScreenSettings.WIDTH` as a win condition (`WIN_ATE_ALL_FISH`) and transitions to `GameOverScene` with a victory outcome.
   - `PAUSED`: no world updates.
-- **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. During `ACTIVE`, `Hud.draw(screen)` is called after world sprites so score labels sit on top of gameplay. `PAUSED` draws black background + centered pause text.
+- **Render:** `DROPPING_IN` and `ACTIVE` draw ocean gradient + world sprites. During `ACTIVE`, `Hud.draw(screen, remaining_seconds)` is called after world sprites so score labels sit on top of gameplay. The HUD shows a countdown timer in the top-right. `PAUSED` draws black background + centered pause text.
 
 #### `GameOverScene` (`ui/scenes/game_over_scene.py`)
 
@@ -84,8 +86,10 @@ Displays a two-step end-of-run flow before leaderboard routing.
 
 - **Phase 1 render:** Black background + centered outcome text.
   - Loss path: `YOU WERE EATEN BY A BIGGER FISH`
+  - Starvation path: `YOU STARVED TO DEATH`
   - Win path: `YOU'VE EATEN ALL THE FISH!`
   - Font size: `UiSettings.OUTCOME_MESSAGE_FONT_SIZE`.
+  - Loss and starvation use red text.
 - **Phase 2 render:** Black background + centered `GAME OVER`.
   - Font size: `UiSettings.OVERLAY_FONT_SIZE`.
 - **Input:** Enter / controller A / controller START advances phase; from phase 2 it routes onward.
@@ -96,17 +100,25 @@ Displays a two-step end-of-run flow before leaderboard routing.
 
 Run-scoped model for points.
 
-- Tracks `fish_eaten` (count) and `size_eaten` (cumulative fish width in px).
-- `add(fish_size)` increments both counters.
-- `total` property returns `size_eaten`, which is the leaderboard-persisted value in Pass 2.
+- Tracks `fish_eaten` (count), `size_eaten` (cumulative fish width in px), `final_weight` (player width at run end), and `time_left_seconds` (hunger timer at run end).
+- `add(fish_size)` increments `fish_eaten` and `size_eaten`.
+- `final_weight` and `time_left_seconds` are set by `PlayScene._end_run` just before transitioning to `GameOverScene`.
+- `total` property computes the compound leaderboard score:
+  `size_eaten × WEIGHT_EATEN_FACTOR + fish_eaten × FISH_EATEN_BONUS + final_weight × FINAL_WEIGHT_FACTOR + time_left_seconds × TIME_LEFT_BONUS`
+  All factors live in `ScoreSettings`.
 
 ### `Hud` (`ui/hud.py`)
 
 Lightweight gameplay overlay widget owned by `PlayScene`.
 
-- Inputs: run `Score`, HUD font, optional leaderboard service.
-- Layout: top-left fish count (`FISH: NN`), top-right run score (`SCORE: NNNNN`), top-center top score (`HI: NNNNN  XYZ` or `HI: -----`).
-- Draw order: rendered after world sprites and before the CRT pass.
+- Inputs: run `Score`, HUD font, player sprite (for live weight display).
+- Layout: top-left stacked column:
+  - `TOTAL FISH EATEN: NN`
+  - `WEIGHT EATEN: NNNNN`
+  - `CURRENT WEIGHT: NNNNN` (reads `player.size` live)
+  - `HUNGER TIMER: MM:SS` — text turns red at or below `UiSettings.HUNGER_WARNING_SECONDS`
+  - Hunger bar below the timer: full-width = green, empty = red (smooth RGB lerp), filled fraction = `remaining / STARTING_SECONDS`.
+- Score is no longer shown in the HUD; it is computed from all stats at run end.
 
 ### `Leaderboard` (`systems/leaderboard.py`)
 
@@ -185,6 +197,8 @@ Single source of truth for all tunables.
 | `InputSettings`  | Controller button/axis indices + quit combo + analog threshold.       |
 | `PlayerSettings` | Player movement speed and initial sprite size.                        |
 | `FishSettings`   | Fish spawn rate, size range, speed range, player growth amount.       |
+| `TimerSettings`  | Countdown starting time, seconds-per-pixel bonus, min ratio, and warning threshold. |
+| `ScoreSettings`  | Weighting factors for the compound end-of-run score formula.         |
 | `UiSettings`     | Overlay/HUD text labels, font sizes, and HUD padding.                 |
 | `GameStateSettings` | Canonical state names (`playing`, `paused`, `game_over`).           |
 | `FontSettings`   | Font file path.                                                       |

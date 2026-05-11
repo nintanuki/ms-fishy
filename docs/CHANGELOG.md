@@ -2148,3 +2148,154 @@ doing the actual implementation.
 **Why:** Required append-only history update for this fix.
 
 **Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+## 2026-05-11T12:00:00-04:00 — countdown timer, fish time bonus, starvation ending
+
+**File:** settings.py
+**Lines (at time of edit):** 45-53, 169-201 (modified)
+**Before:**
+    UiSettings defined only the bigger-fish and victory outcome text/colors.
+    No dedicated timer settings block existed.
+**After:**
+    Added `UiSettings.STARVED_TO_DEATH_TEXT` and `UiSettings.STARVED_TO_DEATH_COLOR`.
+    Added `TimerSettings` with `STARTING_SECONDS = 60` and `SECONDS_PER_FISH_PIXEL = 1`.
+**Why:** Makes the countdown start time and per-fish time bonus easy to tune in one place.
+
+**File:** ui/hud.py
+**Lines (at time of edit):** 1-53 (modified)
+**Before:**
+    HUD formatted an elapsed-time counter from whole seconds.
+**After:**
+    HUD now formats a countdown using `math.ceil(remaining_seconds)` and still renders fish count and score.
+**Why:** Top-right HUD label now shows time remaining instead of time elapsed.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** 1-227 (modified)
+**Before:**
+    PlayScene tracked `_elapsed_frames`, passed elapsed seconds into the HUD, and only ended on bigger-fish or win conditions.
+**After:**
+    PlayScene now owns `_remaining_time_seconds`, decrements it during ACTIVE play, adds `fish.size * TimerSettings.SECONDS_PER_FISH_PIXEL` when fish are eaten, passes remaining time into the HUD, and ends the run with a starvation outcome when the timer reaches zero.
+**Why:** Converts the timer from a passive elapsed counter into an active countdown that can end the run and reward eating fish with more time.
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 19-131 (modified)
+**Before:**
+    Outcome text handled only bigger-fish loss and victory.
+**After:**
+    Added a starvation outcome branch that renders `YOU STARVED TO DEATH` in red with the same size and centered position as the other outcome messages.
+**Why:** Gives the new countdown fail-state its own dedicated game-over card.
+
+**File:** docs/ARCHITECTURE.md
+**Lines (at time of edit):** 73-109 (modified)
+**Before:**
+    PlayScene docs described elapsed-time HUD behavior and only two loss/victory endings.
+**After:**
+    Docs now describe the countdown timer, fish-width time bonus, starvation routing, and the new top-right countdown HUD label.
+**Why:** Keeps the architecture notes aligned with the new runtime behavior.
+
+**File:** docs/TESTING.md
+**Lines (at time of edit):** 18-25 (modified)
+**Before:**
+    Gameplay smoke checks covered bigger-fish loss, victory, and pause behavior but not the countdown timer.
+**After:**
+    Smoke checks now verify the one-minute starting timer, the fish-width time bonus, the starvation fail-state, and the updated red end-of-run message.
+**Why:** Adds a manual check for the new countdown behavior.
+
+**Editor:** GitHub Copilot (GPT-5.4 mini)
+
+## 2026-05-11T13:30:00-04:00 — HUD redesign, diminishing-returns timer, compound score formula
+
+**File:** settings.py
+**Lines (at time of edit):** UiSettings (added HUD layout constants), TimerSettings (added TIMER_MIN_RATIO), new ScoreSettings class
+**Before:**
+    UiSettings had no HUD layout constants.
+    TimerSettings had only STARTING_SECONDS and SECONDS_PER_FISH_PIXEL.
+    No ScoreSettings class existed.
+**After:**
+    UiSettings: added HUD_LINE_SPACING, HUD_BAR_WIDTH, HUD_BAR_HEIGHT, HUNGER_WARNING_SECONDS.
+    TimerSettings: added TIMER_MIN_RATIO = 0.1 (floor for diminishing-returns ratio).
+    ScoreSettings: new class with WEIGHT_EATEN_FACTOR=1, FISH_EATEN_BONUS=10,
+    FINAL_WEIGHT_FACTOR=3, TIME_LEFT_BONUS=20.
+**Why:** Centralises all tunable constants for the new HUD and compound score formula.
+
+**File:** core/score.py
+**Lines (at time of edit):** 1-40 (modified)
+**Before:**
+    Tracked fish_eaten and size_eaten only; total returned size_eaten.
+**After:**
+    Added final_weight and time_left_seconds fields (default 0, set at run end).
+    total property now returns the compound formula:
+        size_eaten * WEIGHT_EATEN_FACTOR
+        + fish_eaten * FISH_EATEN_BONUS
+        + int(final_weight) * FINAL_WEIGHT_FACTOR
+        + int(time_left_seconds) * TIME_LEFT_BONUS
+**Why:** Score should reflect all run metrics, not just raw weight eaten.
+
+**File:** ui/hud.py
+**Lines (at time of edit):** 1-87 (rewritten)
+**Before:**
+    Three labels (FISH top-left, SCORE centre-top, TIME top-right); no hunger bar.
+**After:**
+    Four stacked top-left labels:
+        TOTAL FISH EATEN: NN
+        WEIGHT EATEN: NNNNN
+        CURRENT WEIGHT: NNNNN   (reads player.size live)
+        HUNGER TIMER: MM:SS     (turns red at <= HUNGER_WARNING_SECONDS)
+    Hunger bar below timer: green->red RGB lerp, drains as fraction of STARTING_SECONDS.
+    Score no longer shown in HUD; computed at run end.
+    Constructor now accepts player argument to read live current weight.
+**Why:** User requested this exact layout and hunger-bar visual.
+
+**File:** ui/scenes/play_scene.py
+**Lines (at time of edit):** Hud constructor call, update loop, _end_run (modified)
+**Before:**
+    Hud(score=..., font=...)
+    Time bonus was fish_size * SECONDS_PER_FISH_PIXEL (no diminishing returns).
+    _end_run did not set score.final_weight or score.time_left_seconds.
+**After:**
+    Hud(score=..., font=..., player=self.player)
+    Time bonus now applies diminishing returns:
+        effective_ratio = max(TIMER_MIN_RATIO, min(1.0, fish_size / player.size))
+        bonus = fish_size * SECONDS_PER_FISH_PIXEL * effective_ratio
+    _end_run sets score.final_weight = player.size and
+        score.time_left_seconds = _remaining_time_seconds before transitioning.
+**Why:** Near-peer fish give full time bonus; tiny fish give minimal time to a large player.
+    Score.total must reflect all stats, so they must be captured before the scene change.
+
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)
+
+## 2026-05-11T14:15:00-04:00 — HUD polish: font size, line gap, bar fix, color, no leading zeros
+
+**File:** settings.py
+**Lines (at time of edit):** UiSettings block (modified)
+**Before:**
+    HUD_FONT_SIZE_SMALL = 16
+    HUD_LINE_SPACING = 22
+    HUD_BAR_HEIGHT = 8          # (no HUD_BAR_TOP_GAP)
+**After:**
+    HUD_FONT_SIZE_SMALL = 13
+    HUD_LINE_SPACING = 26
+    HUD_BAR_HEIGHT = 8
+    HUD_BAR_TOP_GAP = 4         # pixel gap between hunger timer text and hunger bar
+**Why:** Smaller font and wider spacing improve readability; HUD_BAR_TOP_GAP ensures
+    the bar never overlaps the timer text regardless of font size.
+
+**File:** ui/hud.py
+**Lines (at time of edit):** stat_rows, timer_color, bar_y (modified)
+**Before:**
+    f"TOTAL FISH EATEN: {self.score.fish_eaten:02d}"   # leading zeros
+    f"WEIGHT EATEN: {self.score.size_eaten:05d}"
+    f"CURRENT WEIGHT: {int(self.player.size):05d}"
+    ColorSettings.WHITE (stat labels and timer default)
+    bar_y = timer_y + line_h   # fixed offset -- overlapped timer text
+**After:**
+    f"TOTAL FISH EATEN: {self.score.fish_eaten}"       # plain integer, starts at 0
+    f"WEIGHT EATEN: {self.score.size_eaten}"
+    f"CURRENT WEIGHT: {int(self.player.size)}"
+    ColorSettings.IN_GAME_HUD_TEXT (stat labels and timer default)
+    bar_y = timer_y + timer_surf.get_height() + UiSettings.HUD_BAR_TOP_GAP
+**Why:** User requested no leading zeros (values start at 0), TRINIDAD color for
+    contrast against the aqua background, and the bar was visually overlapping the
+    timer label -- fixed by anchoring to the actual rendered text height.
+
+**Editor:** GitHub Copilot (Claude Sonnet 4.6)

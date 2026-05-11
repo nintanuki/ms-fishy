@@ -25,6 +25,7 @@ class GameOverScene(Scene):
     """
 
     OUTCOME_EATEN_BY_BIGGER_FISH = "loss_eaten_by_bigger_fish"
+    OUTCOME_STARVED_TO_DEATH = "loss_starved_to_death"
     OUTCOME_ATE_ALL_FISH = "win_ate_all_fish"
 
     _PHASE_OUTCOME_MESSAGE = "phase_outcome_message"
@@ -83,6 +84,8 @@ class GameOverScene(Scene):
             return UiSettings.GAME_OVER_TEXT
         if self.outcome == self.OUTCOME_ATE_ALL_FISH:
             return UiSettings.ATE_ALL_FISH_TEXT
+        if self.outcome == self.OUTCOME_STARVED_TO_DEATH:
+            return UiSettings.STARVED_TO_DEATH_TEXT
         return UiSettings.EATEN_BY_BIGGER_FISH_TEXT
 
     def _current_message_color(self) -> tuple[int, int, int]:
@@ -91,6 +94,8 @@ class GameOverScene(Scene):
             return ColorSettings.WHITE
         if self.outcome == self.OUTCOME_ATE_ALL_FISH:
             return UiSettings.ATE_ALL_FISH_COLOR
+        if self.outcome == self.OUTCOME_STARVED_TO_DEATH:
+            return UiSettings.STARVED_TO_DEATH_COLOR
         return UiSettings.EATEN_BY_BIGGER_FISH_COLOR
 
     def handle_event(self, event: pygame.event.EventType) -> None:

@@ -15,6 +15,7 @@ from settings import (
     InputSettings,
     PlayerSettings,
     ScreenSettings,
+    TimerSettings,
     UiSettings,
 )
 from utils.graphics import build_gradient_surface
@@ -29,6 +30,7 @@ class PlayScene(Scene):
     PAUSED = "paused"
 
     LOSS_EATEN_BY_BIGGER_FISH = "loss_eaten_by_bigger_fish"
+    LOSS_STARVED_TO_DEATH = "loss_starved_to_death"
     WIN_ATE_ALL_FISH = "win_ate_all_fish"
 
     def __init__(self, game, play_intro_splash: bool = False):
@@ -44,13 +46,12 @@ class PlayScene(Scene):
             ScreenSettings.WIDTH, ScreenSettings.HEIGHT,
             ColorSettings.BG_COLOR_TOP, ColorSettings.BG_COLOR_BOTTOM,
         )
-        self.hud_font = pygame.font.Font(FontSettings.FONT, UiSettings.HUD_FONT_SIZE)
         self.hud_font = pygame.font.Font(FontSettings.FONT, UiSettings.HUD_FONT_SIZE_SMALL)
-        self.hud = Hud(score=self.score, font=self.hud_font)
+        self.hud = Hud(score=self.score, font=self.hud_font, player=self.player)
         self._state = self.DROPPING_IN
         self._play_intro_splash = play_intro_splash
         self._drop_in_splash_played = False
-        self._elapsed_frames = 0
+        self._remaining_time_seconds = float(TimerSettings.STARTING_SECONDS)
 
     def _create_gameplay_entities(self) -> None:
         """Build player, score, enemy container, and fish manager for one session."""
@@ -65,6 +66,7 @@ class PlayScene(Scene):
         """Called when entering this scene from another scene."""
         self._state = self.DROPPING_IN
         self._drop_in_splash_played = False
+        self._remaining_time_seconds = float(TimerSettings.STARTING_SECONDS)
         self.player.rect.center = (ScreenSettings.WIDTH // 2, -self.player.rect.height)
         self.player._pos_x = float(self.player.rect.x)
         self.player._pos_y = float(self.player.rect.y)
@@ -95,6 +97,9 @@ class PlayScene(Scene):
             outcome: End-of-run outcome reason consumed by GameOverScene.
             play_scream: Whether to play the scream SFX for this ending.
         """
+        # Capture final stats so Score.total includes all components.
+        self.score.final_weight = self.player.size
+        self.score.time_left_seconds = self._remaining_time_seconds
         self.game.audio.stop_music()
         if play_scream:
             self.game.audio.play("scream")
@@ -185,17 +190,33 @@ class PlayScene(Scene):
         if self._state == self.PAUSED:
             return
 
-        self._elapsed_frames += 1
+        self._remaining_time_seconds = max(
+            0.0,
+            self._remaining_time_seconds - (1 / ScreenSettings.FPS),
+        )
         self.all_sprites.update(joysticks=self.game.connected_joysticks)
         self.enemy_sprites.update()
         game_over, eaten_sizes = self.fish_manager.update(self.player)
         for fish_size in eaten_sizes:
             self.score.add(fish_size)
+            # Diminishing returns: eating fish much smaller than the player
+            # gives proportionally less time.  The ratio is capped at 1.0 so
+            # eating a peer-sized fish always gives the full bonus, and floored
+            # at TIMER_MIN_RATIO so even tiny fish still give some time.
+            size_ratio = min(1.0, fish_size / self.player.size)
+            effective_ratio = max(TimerSettings.TIMER_MIN_RATIO, size_ratio)
+            self._remaining_time_seconds += (
+                fish_size * TimerSettings.SECONDS_PER_FISH_PIXEL * effective_ratio
+            )
 
         if eaten_sizes:
             self.game.audio.play("gulp")
         if game_over:
             self._end_run(self.LOSS_EATEN_BY_BIGGER_FISH, play_scream=True)
+            return
+
+        if self._remaining_time_seconds <= 0.0:
+            self._end_run(self.LOSS_STARVED_TO_DEATH, play_scream=False)
             return
 
         # Win condition: once the player sprite exceeds the screen width,
@@ -214,7 +235,7 @@ class PlayScene(Scene):
             self.all_sprites.draw(screen)
             self.enemy_sprites.draw(screen)
             if self._state == self.ACTIVE:
-                self.hud.draw(screen, self._elapsed_frames // ScreenSettings.FPS)
+                self.hud.draw(screen, self._remaining_time_seconds)
         elif self._state == self.PAUSED:
             screen.fill(ColorSettings.BLACK)
             draw_centered_text(
