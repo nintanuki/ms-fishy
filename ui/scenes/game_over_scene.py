@@ -168,6 +168,16 @@ class GameOverScene(Scene):
         visible_count = self._visible_tally_line_count()
         start_y = int(ScreenSettings.HEIGHT * UiSettings.TALLY_LINE_START_Y_RATIO)
 
+        # Keep the block anchor stable across reveal steps by measuring all
+        # tally rows (including rows not visible yet) before drawing.
+        all_row_widths: list[int] = []
+        for i, line in enumerate(lines):
+            is_total_row = i == len(lines) - 1
+            text_font = self._tally_total_font if is_total_row else self._tally_font
+            all_row_widths.append(text_font.size(line)[0])
+        block_width = max(all_row_widths)
+        block_left_x = (ScreenSettings.WIDTH - block_width) // 2
+
         visible_surfaces: list[tuple[pygame.Surface, bool]] = []
         for i in range(visible_count):
             is_total_row = i == len(lines) - 1
@@ -175,9 +185,6 @@ class GameOverScene(Scene):
             text_font = self._tally_total_font if is_total_row else self._tally_font
             line_surface = text_font.render(lines[i], True, text_color)
             visible_surfaces.append((line_surface, is_total_row))
-
-        block_width = max(surface.get_width() for surface, _ in visible_surfaces)
-        block_left_x = (ScreenSettings.WIDTH - block_width) // 2
 
         y = start_y
         for surface, is_total_row in visible_surfaces:

@@ -470,6 +470,23 @@ doing the actual implementation.
 
 ---
 
+## 2026-05-11T12:40:42-04:00 — prevent tally lines from shifting during reveal
+
+**File:** ui/scenes/game_over_scene.py
+**Lines (at time of edit):** 171-179 in `render` (modified)
+**Before:**
+    `block_width` was computed from only currently visible lines, so when a
+    wider line appeared later, `block_left_x` changed and previously drawn
+    lines appeared to jump left.
+**After:**
+    `block_width` is computed from all tally lines up front (including rows not
+    yet visible), then a fixed `block_left_x` is used for every reveal step.
+**Why:** Keeps the centered left-justified tally block visually stable while rows pop in one-by-one.
+
+**Editor:** GitHub Copilot (GPT-5.3-Codex)
+
+---
+
 ## 2026-05-11T12:37:18-04:00 — centered outcome restored; centered left-justified tally block
 
 **File:** ui/scenes/game_over_scene.py
