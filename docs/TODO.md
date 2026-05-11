@@ -111,7 +111,19 @@ Within a pass, items are ordered low-to-high difficulty.
 
 ---
 
-## Pass 3 — Levels and level design *(placeholder — design TBD)*
+## Pass 3 — Score and Endgame
+
+End game is not challenging when player reaches a certain size, and final scores will always be close to the same. Let's add other stats to thes core
+
+- [ ] Add a timer, test it so that it gets close to zero when the player gets to a size that they are unbeatable, this effectively treats the invincible stage as a bonus round. Seconds left on timer add to the score
+- [ ] # of fish adds to score
+- [ ] eating multiple fish at a time adds to score.
+- [ ] player's final weight adds to score
+- [ ] Display all statistics at the end (# of fish eaten, player weight, time left, etc) and add to final score
+
+---
+
+## Pass 4 — Levels and level design *(placeholder — design TBD)*
 
 Difficulty in Ms. Fishy will come from **level design**, not from a global
 difficulty ramp or fish-stat scaling. The base loop where the player
@@ -131,7 +143,7 @@ land. Likely directions to revisit later:
 
 ---
 
-## Pass 4 — Visual polish (Pygame-primitive only)
+## Pass 5 — Visual polish (Pygame-primitive only)
 
 Last pass. These items make the game prettier without affecting gameplay.
 Everything here must be drawable with Pygame's draw API — no imported art.
@@ -153,7 +165,7 @@ Everything here must be drawable with Pygame's draw API — no imported art.
 
 ---
 
-## Pass 5 — Audio polish
+## Pass 6 — Audio polish
 
 Most of the audio system already exists; only thin gaps remain.
 
@@ -165,7 +177,7 @@ Most of the audio system already exists; only thin gaps remain.
 
 ---
 
-## Pass 6 — Settings menu
+## Pass 7 — Settings menu
 
 Now that there are scenes and persistence, give the player real knobs.
 
